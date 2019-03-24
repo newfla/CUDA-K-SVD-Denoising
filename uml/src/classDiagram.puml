@@ -1,0 +1,51 @@
+@startuml diagrammaSVD
+
+class Matrix{
+    + int m
+    + int n
+    + int ld
+    + double* matrix
+}
+
+abstract class SvdEngine{
+    # init( Matrix* )
+    # Matrix*[ ] getOutputMatrices( )
+    {abstract} # work( )
+    {static} + SvdEngine factory ( SvdEngineType )
+}
+
+enum SvdEngineType{
+        CUSOLVERDNDGESVD
+        MKL
+        MAGMA
+}
+
+class CuSolverDnDgeSvdEngine{
+    - copyToDevice( )
+    - copyFromDevice( )
+    # work( )
+}
+
+class TimePerformance{
+    + float getInitTime()
+    + float getWorkingTime()
+    + float getFinalizeTime()
+    + float getTotalTime()
+}
+
+note bottom: Time in milliseconds
+
+class SvdContainer{
+    + setInputMatrix( Matrix* )
+    + Matrix*[ ] getOutputMatrices( )
+    + setSvdEngine( SvdEngine* )
+    + TimePerformance* getTimePerformance( )
+}
+
+SvdContainer --> "4" Matrix 
+SvdContainer --> "1" SvdEngine
+TimePerformance "1" <- SvdContainer
+SvdEngine -> "*" Matrix
+SvdEngine <|-- CuSolverDnDgeSvdEngine
+
+@enduml
