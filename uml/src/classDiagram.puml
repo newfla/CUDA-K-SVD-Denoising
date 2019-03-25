@@ -5,13 +5,16 @@ class Matrix{
     + int n
     + int ld
     + double* matrix
+    {static} + Matrix* randomMatrix (m,n,ld)
+
 }
 
 abstract class SvdEngine{
-    # init( Matrix* )
-    # Matrix*[ ] getOutputMatrices( )
+    
+    {abstract} # init(Matrix*)
+    {abstract} # Matrix*[ ] getOutputMatrices( )
     {abstract} # work( )
-    {static} + SvdEngine factory ( SvdEngineType )
+    {static} + SvdEngine factory (SvdEngineType)
 }
 
 enum SvdEngineType{
@@ -26,7 +29,7 @@ class CuSolverDnDgeSvdEngine{
     # work( )
 }
 
-class TimePerformance{
+class TimeElapsed{
     + float getInitTime()
     + float getWorkingTime()
     + float getFinalizeTime()
@@ -36,16 +39,22 @@ class TimePerformance{
 note bottom: Time in milliseconds
 
 class SvdContainer{
-    + setInputMatrix( Matrix* )
+    + SvdContainer(SvdEngine*)
+    + setMatrix(Matrix*)
     + Matrix*[ ] getOutputMatrices( )
-    + setSvdEngine( SvdEngine* )
-    + TimePerformance* getTimePerformance( )
+    + TimeElapsed* getTimeElapsed( )
 }
 
-SvdContainer --> "4" Matrix 
+SvdContainer ..>  Matrix : use
 SvdContainer --> "1" SvdEngine
-TimePerformance "1" <- SvdContainer
+TimeElapsed "1" <- SvdContainer
 SvdEngine -> "*" Matrix
 SvdEngine <|-- CuSolverDnDgeSvdEngine
+
+hide SvdEngine fields
+hide TimeElapsed fields
+hide SvdContainer fields
+hide CuSolverDnDgeSvdEngine fields
+hide SvdEngineType methods
 
 @enduml

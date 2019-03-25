@@ -23,7 +23,7 @@ ELSE()
 
     project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
 
-   #add_library(mat_mat_cuda lib/mat_mat_cuda.cu)
+    add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_container.cpp)
 
     add_executable(denoising main.cu)
 
