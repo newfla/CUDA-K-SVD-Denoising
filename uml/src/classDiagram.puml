@@ -30,10 +30,10 @@ class CuSolverDnDgeSvdEngine{
 }
 
 class TimeElapsed{
-    + float getInitTime()
-    + float getWorkingTime()
-    + float getFinalizeTime()
-    + float getTotalTime()
+    + int getInitTime()
+    + int getWorkingTime()
+    + int getFinalizeTime()
+    + int  getTotalTime()
 }
 
 note bottom: Time in milliseconds

@@ -8,9 +8,11 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     find_package(CUDA 9.1 QUIET REQUIRED)
 
+    set(CMAKE_CXX_FLAGS "-std=c++11")
+
     set(CUDA_64_BIT_DEVICE_CODE ON)
 
-   #cuda_add_executable(denoising main.cu lib/mat_mat_cuda.cu)
+   cuda_add_executable(denoising main.cpp lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/cusolver_dn_dgesvd_engine.cu)
 
 ELSE()
 
@@ -23,8 +25,10 @@ ELSE()
 
     project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
 
-    add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_container.cpp)
+    add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/cusolver_dn_dgesvd_engine.cu)
 
-    add_executable(denoising main.cu)
+    add_executable(denoising main.cpp)
+
+    target_link_libraries(denoising svdLib)
 
 ENDIF()

@@ -6,9 +6,12 @@ using namespace svd;
 
 SvdContainer::SvdContainer(SvdEngine* svdEngine){
     this->svdEngine = svdEngine;
+    this->timeElapsed = new TimeElapsed();
 }
 
 SvdContainer::~SvdContainer(){
+    std::cout<<"\nContainer";
+    delete timeElapsed;
     delete svdEngine;
 }
 
@@ -19,8 +22,8 @@ void SvdContainer::setMatrix(Matrix* matrix){
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 }
 
-Matrix* SvdContainer::getOutputMatrices(){
-    Matrix* output;
+std::vector<Matrix*> SvdContainer::getOutputMatrices(){
+    std::vector<Matrix*> output;
 
     auto start = std::chrono::steady_clock::now();
     svdEngine->work();
