@@ -25,14 +25,20 @@ int main(int argc, char *argv[]) {
 
     std::vector<SvdContainer*> list = buildExample(2, 10, 10);
 
-    for(SvdContainer* pointer: list){
+    std::cout<<"-----------------------------------------------"<<std::endl;
+
+    for(int i = 0; i<list.size(); i++){
+        SvdContainer* pointer = list[i];
         pointer->getOutputMatrices();
         TimeElapsed* timeElapsed = pointer->getTimeElapsed();
-        
-        std::cout<<"Init Time: " << timeElapsed->getInitTime()<<std::endl;
-        std::cout<<"Working Time: " << timeElapsed->getWorkingTime()<<std::endl;
-        std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<std::endl;
+
+        std::cout<<"Matrix #"<<i+1<<std::endl;
+        std::cout<<"Init Time: " << timeElapsed->getInitTime()<<"ms"<<std::endl;
+        std::cout<<"Working Time: " << timeElapsed->getWorkingTime()<<"ms"<<std::endl;
+        std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<"ms"<<std::endl;
+        std::cout<<"-----------------------------------------------"<<std::endl;
     }
     
     cleanUp(list);
+    return 0;
 }

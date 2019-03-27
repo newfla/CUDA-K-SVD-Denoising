@@ -10,12 +10,13 @@ SvdContainer::SvdContainer(SvdEngine* svdEngine){
 }
 
 SvdContainer::~SvdContainer(){
-    std::cout<<"\nContainer";
+   // std::cout<<"\nContainer";
     delete timeElapsed;
     delete svdEngine;
 }
 
 void SvdContainer::setMatrix(Matrix* matrix){
+
     auto start = std::chrono::steady_clock::now();
     svdEngine->init(matrix);
     auto end = std::chrono::steady_clock::now();
@@ -23,6 +24,7 @@ void SvdContainer::setMatrix(Matrix* matrix){
 }
 
 std::vector<Matrix*> SvdContainer::getOutputMatrices(){
+
     std::vector<Matrix*> output;
 
     auto start = std::chrono::steady_clock::now();

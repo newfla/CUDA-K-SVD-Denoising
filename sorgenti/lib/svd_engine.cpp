@@ -3,9 +3,9 @@
 using namespace svd;
 
 SvdEngine::~SvdEngine(){
-    std::cout<<"\nengine";
+   // std::cout<<"\nengine";
     delete input;
-    for(Matrix* matrix : *output)
+    for(Matrix* matrix : output)
       delete matrix;
 }
 

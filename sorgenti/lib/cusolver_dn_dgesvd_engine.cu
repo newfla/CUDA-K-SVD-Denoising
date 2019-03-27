@@ -1,29 +1,50 @@
 #include <svdLib.h>
 #include <cuda.h>
-//#include <cuda_runtime.h>
+#include <cuda_runtime.h>
 
 using namespace svd;
 
 void CuSolverDnDgeSvd::init(Matrix* matrix){
 
     //Call parent method
-    SvdEngine::init(matrix);
-    
-    //Save matrix mem dimension
-    size_t space = (matrix->m)*(matrix->n)*sizeof(double);
+    SvdCudaEngine::init(matrix);
 
-    //Allocate memory on device
-    cudaMalloc((void**) &deviceA, space);
+    //Allocate Space on device
+    cusolverDnDgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork );
+    cudaMalloc ((void**)&deviceInfo, sizeof(int));
+    cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
 
-    //Copy matrix on device
-    cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);
 
 }
 
 void CuSolverDnDgeSvd::work(){
-    cudaFree(deviceA);
+
+    //DGESVD
+    cusolverDnDgesvd(
+        cusolverH,
+        'A',
+        'A',
+        input->m,
+        input->n,
+        deviceA,
+        input->ld,
+        deviceS,
+        deviceU,
+        input->m,
+        deviceVT,
+        input->n,
+        deviceWork,
+        lWork,
+        deviceRWork,
+        deviceInfo
+    );
+    cudaDeviceSynchronize();
+    cudaMemcpy(&infoGpu, deviceInfo, sizeof(int), cudaMemcpyDeviceToHost);
+
 }
 
 std::vector<Matrix*> CuSolverDnDgeSvd::getOutputMatrices(){
-    return std::vector<Matrix*>();
+    cudaFree(deviceInfo);
+    cudaFree(deviceRWork);
+    return SvdCudaEngine::getOutputMatrices(); 
 }

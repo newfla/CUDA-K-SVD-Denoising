@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 include_directories("${CMAKE_SOURCE_DIR}/lib")
+include_directories(SYSTEM "/usr/local/cuda/include")
 
 IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
@@ -11,8 +12,12 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
     set(CMAKE_CXX_FLAGS "-std=c++11")
 
     set(CUDA_64_BIT_DEVICE_CODE ON)
+    
+    cuda_add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/svd_cuda_engine.cu lib/cusolver_dn_dgesvd_engine.cu)
 
-   cuda_add_executable(denoising main.cpp lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/cusolver_dn_dgesvd_engine.cu)
+    cuda_add_executable(denoising main.cpp)
+
+    target_link_libraries(denoising svdLib ${CUDA_cusolver_LIBRARY}) 
 
 ELSE()
 
@@ -25,10 +30,10 @@ ELSE()
 
     project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
 
-    add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/cusolver_dn_dgesvd_engine.cu)
+    add_library(svdLib lib/svdLib.h lib/matrix.cpp lib/time_elapsed.cpp lib/svd_engine.cpp lib/svd_container.cpp lib/svd_cuda_engine.cu lib/cusolver_dn_dgesvd_engine.cu)
 
     add_executable(denoising main.cpp)
 
-    target_link_libraries(denoising svdLib)
+    target_link_libraries(denoising svdLib cusolver)
 
 ENDIF()

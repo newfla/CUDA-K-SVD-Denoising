@@ -12,9 +12,21 @@ class Matrix{
 abstract class SvdEngine{
     
     {abstract} # init(Matrix*)
-    {abstract} # Matrix*[ ] getOutputMatrices( )
+    {abstract} # vector<Matrix*> getOutputMatrices( )
     {abstract} # work( )
     {static} + SvdEngine factory (SvdEngineType)
+}
+
+abstract class SvdCudaEngine{
+
+    # double* deviceA
+    # double* deviceU
+    # double* deviceS
+    # double* deviceVT
+    
+
+    # {abstract} init(Matrix*)
+    # {abstract} dvector<Matrix*> getOutputMatrices( )
 }
 
 enum SvdEngineType{
@@ -33,7 +45,7 @@ class TimeElapsed{
     + int getInitTime()
     + int getWorkingTime()
     + int getFinalizeTime()
-    + int  getTotalTime()
+    + int getTotalTime()
 }
 
 note bottom: Time in milliseconds
@@ -49,7 +61,8 @@ SvdContainer ..>  Matrix : use
 SvdContainer --> "1" SvdEngine
 TimeElapsed "1" <- SvdContainer
 SvdEngine -> "*" Matrix
-SvdEngine <|-- CuSolverDnDgeSvdEngine
+SvdEngine <|-- SvdCudaEngine : extends
+SvdCudaEngine <|-- CuSolverDnDgeSvdEngine : extends
 
 hide SvdEngine fields
 hide TimeElapsed fields

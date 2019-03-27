@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include <iostream> //TODO da togliere poi
+#include <cusolverDn.h>
 
 namespace svd{
 
@@ -11,6 +12,7 @@ namespace svd{
     class TimeElapsed;
     class SvdEngine;
     class SvdContainer;
+    class SvdCudaEngine;
     class CuSolverDnDgeSvd;
 
 
@@ -24,14 +26,17 @@ class svd::Matrix{
         int m, n, ld;
         double* matrix;
 
+        Matrix(int, int, int, double*);
         ~Matrix();
         static Matrix* randomMatrix(int, int, int);
+    
+    private:
+        Matrix();
 };
 
 class svd::TimeElapsed{
 
     public:
-    int x = 0;
         int64_t getInitTime();
         int64_t getWorkingTime();
         int64_t getFinalizeTime();
@@ -65,7 +70,8 @@ class svd::SvdEngine{
 
     protected:
         Matrix *input;
-        std::vector<Matrix*> output[3];
+        std::vector<Matrix*> output;
+        cusolverDnHandle_t cusolverH;
         
         virtual void init(Matrix*) ;
         virtual void work() = 0;
@@ -74,7 +80,18 @@ class svd::SvdEngine{
         friend SvdContainer;
 };
 
-class svd::CuSolverDnDgeSvd : public svd::SvdEngine{
+class svd::SvdCudaEngine : public svd::SvdEngine{
+    protected:
+        double *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
+        int lWork = 0;
+        //cusolverDnHandle_t cusolverH;
+
+        virtual void init(Matrix*);
+        virtual std::vector<Matrix*> getOutputMatrices();
+
+};
+
+class svd::CuSolverDnDgeSvd : public svd::SvdCudaEngine{
 
     public:
         void init(Matrix*);
@@ -82,7 +99,9 @@ class svd::CuSolverDnDgeSvd : public svd::SvdEngine{
         std::vector<Matrix*> getOutputMatrices();
 
     private:
-        double* deviceA;
+        double* deviceRWork;
+        int *deviceInfo, infoGpu=0;
+
 };
 
 #endif
