@@ -10,7 +10,7 @@ void CuSolverDnDgeSvd::init(Matrix* matrix){
     SvdCudaEngine::init(matrix);
 
     //Allocate Space on device
-    cusolverDnDgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork );
+    cusolverDnDgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork);
     cudaMalloc ((void**)&deviceInfo, sizeof(int));
     cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
 

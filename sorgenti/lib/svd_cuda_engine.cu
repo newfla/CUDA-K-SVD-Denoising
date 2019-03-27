@@ -17,9 +17,9 @@ void SvdCudaEngine::init(Matrix* matrix){
 
     //Allocate memory on device
     cudaMalloc((void**) &deviceA, space);
-    cudaMalloc((void**) &deviceU, (matrix->m)*(matrix->m)*sizeof(double));
+    cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(double));
     cudaMalloc((void**) &deviceS, (matrix->n)*sizeof(double));
-    cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(double));
+    cudaMalloc((void**) &deviceVT, (matrix->ld)*(matrix->n)*sizeof(double));
 
     //Copy matrix on device
     cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);
@@ -42,9 +42,9 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     outputS = new Matrix (1, input->n, input->n, hostS);
 
     //Copy back to host
-    cudaMemcpy(hostU, deviceU, (outputU->ld)*(outputU->n)*sizeof(double), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostVT, deviceVT, (outputVT->ld)*(outputVT->n)*sizeof(double), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostS, deviceS, (outputS->ld)*sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hostU, deviceU, (outputU->m)*(outputU->m)*sizeof(double), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostVT, deviceVT, (outputVT->n)*(outputVT->n)*sizeof(double), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostS, deviceS, (outputS->n)*sizeof(double), cudaMemcpyDeviceToHost);
 
     //Save SVD
     output = {outputU, outputS, outputVT};

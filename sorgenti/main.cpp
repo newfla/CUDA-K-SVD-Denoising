@@ -2,33 +2,20 @@
 #include <svdLib.h>
 using namespace svd;
 
-std::vector<SvdContainer*> buildExample(int many, int m, int n){
+SvdContainer* buildExample(int m, int n){
 
-    std::vector<SvdContainer*> list;
+    SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_DN_DGESVD));
+    container->setMatrix(Matrix::randomMatrix(m,n,m));
 
-    for(int i = 0; i < many; i++)
-    {
-        SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_DN_DGESVD));
-        container->setMatrix(Matrix::randomMatrix(m,n,m));
-        list.push_back(container);
-    }
-
-    return list;
-}
-
-void cleanUp(std::vector<SvdContainer*> list){
-    for(SvdContainer* pointer: list)
-        delete pointer;
+    return container;
 }
 
 int main(int argc, char *argv[]) {
 
-    std::vector<SvdContainer*> list = buildExample(2, 10, 10);
-
     std::cout<<"-----------------------------------------------"<<std::endl;
 
-    for(int i = 0; i<list.size(); i++){
-        SvdContainer* pointer = list[i];
+    for(int i = 0; i<10; i++){
+        SvdContainer* pointer = buildExample(800, 600);
         pointer->getOutputMatrices();
         TimeElapsed* timeElapsed = pointer->getTimeElapsed();
 
@@ -37,8 +24,8 @@ int main(int argc, char *argv[]) {
         std::cout<<"Working Time: " << timeElapsed->getWorkingTime()<<"ms"<<std::endl;
         std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<"ms"<<std::endl;
         std::cout<<"-----------------------------------------------"<<std::endl;
+
+        delete pointer;
     }
-    
-    cleanUp(list);
     return 0;
 }

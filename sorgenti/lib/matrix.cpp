@@ -21,7 +21,7 @@ Matrix* Matrix::randomMatrix(int m, int n, int ld){
   std::mt19937 engine(rd());
   std::uniform_real_distribution<float> dist(0.,1.);
 
-  for(int i = 0; i < n*m; i++)
+  for(int i = 0; i < ld*n; i++)
     out->matrix[i] = dist(engine);
 
   return out;
