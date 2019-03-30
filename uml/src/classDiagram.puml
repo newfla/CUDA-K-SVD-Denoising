@@ -23,23 +23,46 @@ abstract class SvdCudaEngine{
     # double* deviceU
     # double* deviceS
     # double* deviceVT
+    # double* deviceWork
+    # int lWork;
+    # int infoGpu;
+    # int *deviceInfo;
+    # cusolverDnHandle_t cusolverH
     
 
-    # {abstract} init(Matrix*)
-    # {abstract} dvector<Matrix*> getOutputMatrices( )
+    #  init(Matrix*)
+    #  vector<Matrix*> getOutputMatrices( )
 }
 
 enum SvdEngineType{
-        CUSOLVERDNDGESVD
-        MKL
-        MAGMA
+        CUSOLVER_GESVD
+        CUSOLVER_GESVDJ
+        ...
 }
 
-class CuSolverDnDgeSvdEngine{
-    - copyToDevice( )
-    - copyFromDevice( )
+class CuSolverGeSvd{
+
+    - double* deviceRWork;
+
+    # init(Matrix*)
     # work( )
+    # vector<Matrix*> getOutputMatrices();
 }
+
+class CuSolverGeSvdJ{
+
+    - double tolerance;
+    - int maxSweeps;
+    - int econ;
+    - gesvdjInfo_t gesvdjParams;
+    - cusolverEigMode_t jobZ;
+
+    - printStat();
+    # init(Matrix*)
+    # work( )
+    # vector<Matrix*> getOutputMatrices();
+}
+
 
 class TimeElapsed{
     + int getInitTime()
@@ -62,12 +85,12 @@ SvdContainer --> "1" SvdEngine
 TimeElapsed "1" <- SvdContainer
 SvdEngine -> "*" Matrix
 SvdEngine <|-- SvdCudaEngine : extends
-SvdCudaEngine <|-- CuSolverDnDgeSvdEngine : extends
+SvdCudaEngine <|-- CuSolverGeSvdJ : extends
+SvdCudaEngine <|-- CuSolverGeSvd : extends
 
 hide SvdEngine fields
 hide TimeElapsed fields
 hide SvdContainer fields
-hide CuSolverDnDgeSvdEngine fields
 hide SvdEngineType methods
 
 @enduml

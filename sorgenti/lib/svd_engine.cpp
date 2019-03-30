@@ -16,8 +16,11 @@ void SvdEngine::init(Matrix* matrix){
 SvdEngine* SvdEngine::factory(SvdEngineType type){
     switch (type)
     {
-        case CUSOLVER_DN_DGESVD:
-            return new CuSolverDnDgeSvd();
+        case CUSOLVER_GESVD:
+            return new CuSolverGeSvd();
+
+        case CUSOLVER_GESVDJ:
+            return new CuSolverGeSvdJ();
             
         default:
             return NULL;

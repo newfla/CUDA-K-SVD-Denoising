@@ -15,7 +15,11 @@ Matrix::~Matrix(){
 }
 
 Matrix* Matrix::randomMatrix(int m, int n, int ld){
-  double* matrix = new double[ld*n]();
+  double* matrix;
+  try{
+      matrix = new double[ld*n]();
+  }catch(std::bad_alloc&){std::cout<<"Bad alloc on host\n";}
+  
   Matrix* out = new Matrix(m, n, ld, matrix);
   std::random_device rd;
   std::mt19937 engine(rd());
@@ -23,6 +27,5 @@ Matrix* Matrix::randomMatrix(int m, int n, int ld){
 
   for(int i = 0; i < ld*n; i++)
     out->matrix[i] = dist(engine);
-
   return out;
 }

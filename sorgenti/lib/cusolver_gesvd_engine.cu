@@ -4,20 +4,18 @@
 
 using namespace svd;
 
-void CuSolverDnDgeSvd::init(Matrix* matrix){
+void CuSolverGeSvd::init(Matrix* matrix){
 
     //Call parent method
     SvdCudaEngine::init(matrix);
 
-    //Allocate Space on device
-    cusolverDnDgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork);
-    cudaMalloc ((void**)&deviceInfo, sizeof(int));
+    //Allocate WorkSpace on device
+    cusolverDnSgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork);
     cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
-
-
+    
 }
 
-void CuSolverDnDgeSvd::work(){
+void CuSolverGeSvd::work(){
 
     //DGESVD
     cusolverDnDgesvd(
@@ -39,11 +37,9 @@ void CuSolverDnDgeSvd::work(){
         deviceInfo
     );
     cudaDeviceSynchronize();
-    cudaMemcpy(&infoGpu, deviceInfo, sizeof(int), cudaMemcpyDeviceToHost);
-
 }
 
-std::vector<Matrix*> CuSolverDnDgeSvd::getOutputMatrices(){
+std::vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
     cudaFree(deviceInfo);
     cudaFree(deviceRWork);
     return SvdCudaEngine::getOutputMatrices(); 

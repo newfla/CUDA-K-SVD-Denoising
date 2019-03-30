@@ -13,11 +13,11 @@ namespace svd{
     class SvdEngine;
     class SvdContainer;
     class SvdCudaEngine;
-    class CuSolverDnDgeSvd;
-
+    class CuSolverGeSvd;
+    class CuSolverGeSvdJ;
 
     //Enum section
-    enum SvdEngineType{CUSOLVER_DN_DGESVD};
+    enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ};
 };
 
 class svd::Matrix{
@@ -71,7 +71,6 @@ class svd::SvdEngine{
     protected:
         Matrix *input;
         std::vector<Matrix*> output;
-        cusolverDnHandle_t cusolverH;
         
         virtual void init(Matrix*) ;
         virtual void work() = 0;
@@ -84,14 +83,15 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
     protected:
         double *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
         int lWork = 0;
-        //cusolverDnHandle_t cusolverH;
+        int infoGpu=0;
+        int *deviceInfo;
+        cusolverDnHandle_t cusolverH;
 
         virtual void init(Matrix*);
         virtual std::vector<Matrix*> getOutputMatrices();
-
 };
 
-class svd::CuSolverDnDgeSvd : public svd::SvdCudaEngine{
+class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
 
     public:
         void init(Matrix*);
@@ -100,7 +100,23 @@ class svd::CuSolverDnDgeSvd : public svd::SvdCudaEngine{
 
     private:
         double* deviceRWork;
-        int *deviceInfo, infoGpu=0;
+};
+
+class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
+
+    public:
+        void init(Matrix*);
+        void work();
+        std::vector<Matrix*> getOutputMatrices();
+
+    private:
+        double tolerance;
+        int maxSweeps;
+        int econ = 0;
+        gesvdjInfo_t gesvdjParams;
+        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
+
+        void printStat();
 
 };
 

@@ -11,18 +11,23 @@ void SvdCudaEngine::init(Matrix* matrix){
 
     //Create cusolverDn handle
     cusolverDnCreate(&cusolverH) ;
+
+    //Alocate space for cusolverDnInfo
+    cudaMalloc ((void**)&deviceInfo, sizeof(int));
     
     //Save matrix mem dimension
     size_t space = (matrix->ld)*(matrix->n)*sizeof(double);
 
     //Allocate memory on device
-    cudaMalloc((void**) &deviceA, space);
+    //std::cout<<"risultato cudaMalloc di A: "<<
+    cudaMalloc((void**) &deviceA, space);//<<std::endl;
     cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(double));
     cudaMalloc((void**) &deviceS, (matrix->n)*sizeof(double));
-    cudaMalloc((void**) &deviceVT, (matrix->ld)*(matrix->n)*sizeof(double));
+    cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(double));
 
     //Copy matrix on device
-    cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);
+    //std::cout<<"risultato memcpy di A: "<<
+    cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);//<<std::endl;
 
 } 
 
@@ -37,14 +42,15 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     hostS = new double[input->n]();
 
     //Output matrices
-    outputU = new Matrix(input->m, input->m, input->m, hostU);
+    outputU = new Matrix(input->ld, input->m, input->m, hostU);
     outputVT = new Matrix(input->n, input->n, input->n, hostVT);
-    outputS = new Matrix (1, input->n, input->n, hostS);
+    outputS = new Matrix (1, input->n, 1, hostS);
 
     //Copy back to host
-    cudaMemcpy(hostU, deviceU, (outputU->m)*(outputU->m)*sizeof(double), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostU, deviceU, (outputU->ld)*(outputU->m)*sizeof(double), cudaMemcpyDeviceToHost );
     cudaMemcpy(hostVT, deviceVT, (outputVT->n)*(outputVT->n)*sizeof(double), cudaMemcpyDeviceToHost );
     cudaMemcpy(hostS, deviceS, (outputS->n)*sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&infoGpu, deviceInfo, sizeof(int), cudaMemcpyDeviceToHost);
 
     //Save SVD
     output = {outputU, outputS, outputVT};
