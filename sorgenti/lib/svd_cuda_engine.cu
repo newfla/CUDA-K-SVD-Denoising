@@ -41,7 +41,7 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     hostVT = new double[(input->n)*(input->n)]();
     hostS = new double[input->n]();
 
-    //Output matrices
+    //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, hostU);
     outputVT = new Matrix(input->n, input->n, input->n, hostVT);
     outputS = new Matrix (1, input->n, 1, hostS);
@@ -50,7 +50,6 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     cudaMemcpy(hostU, deviceU, (outputU->ld)*(outputU->m)*sizeof(double), cudaMemcpyDeviceToHost );
     cudaMemcpy(hostVT, deviceVT, (outputVT->n)*(outputVT->n)*sizeof(double), cudaMemcpyDeviceToHost );
     cudaMemcpy(hostS, deviceS, (outputS->n)*sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&infoGpu, deviceInfo, sizeof(int), cudaMemcpyDeviceToHost);
 
     //Save SVD
     output = {outputU, outputS, outputVT};

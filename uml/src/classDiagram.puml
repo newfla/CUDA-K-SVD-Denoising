@@ -25,7 +25,6 @@ abstract class SvdCudaEngine{
     # double* deviceVT
     # double* deviceWork
     # int lWork;
-    # int infoGpu;
     # int *deviceInfo;
     # cusolverDnHandle_t cusolverH
     

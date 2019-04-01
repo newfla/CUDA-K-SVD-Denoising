@@ -83,7 +83,6 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
     protected:
         double *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
         int lWork = 0;
-        int infoGpu=0;
         int *deviceInfo;
         cusolverDnHandle_t cusolverH;
 

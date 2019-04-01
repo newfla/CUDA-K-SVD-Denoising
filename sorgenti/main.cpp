@@ -30,6 +30,38 @@ void exec(int m, int n, int tot){
     }
 }
 
+void exec2(int m, int n, int tot){
+    std::cout<<"---------------------<<"<<m<<","<<n<<">>--------------------------"<<std::endl;
+
+    for(int i = 0; i<tot; i++){
+        Matrix* input = Matrix::randomMatrix(m,n,m);
+        
+        SvdContainer* pointer = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVD));
+        pointer->setMatrix(input);
+        Matrix* matrixS = pointer->getOutputMatrices()[1];
+
+        SvdContainer* pointer1 = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
+        pointer1->setMatrix(input); 
+        Matrix* matrix1S = pointer1->getOutputMatrices()[1];
+
+        double maxError = 0;
+
+        for(int j = 0; j < n; j++){
+            double err = fabs( matrix1S->matrix[j] - matrixS->matrix[j] );
+            maxError = (maxError > err) ? maxError : err;
+        }
+
+        std::cout<<"Matrix #"<<i+1<<std::endl;
+        std::cout<<"Max error: "<<maxError<<std::endl;
+        std::cout<<"-----------------------------------------------"<<std::endl;
+
+        //Comment line #7 in svd_engine.cpp
+        delete pointer;
+        delete pointer1;
+        delete input; 
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     int m = 800, n = 800;
@@ -44,6 +76,5 @@ int main(int argc, char *argv[]) {
     exec(4096,2048,10);
     exec(8192,4096,5);
 
-    
     return 0;
 }
