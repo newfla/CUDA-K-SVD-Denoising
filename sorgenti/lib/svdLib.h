@@ -24,9 +24,9 @@ class svd::Matrix{
 
     public:
         int m, n, ld;
-        double* matrix;
+        float* matrix;
 
-        Matrix(int, int, int, double*);
+        Matrix(int, int, int, float*);
         ~Matrix();
         static Matrix* randomMatrix(int, int, int);
     
@@ -81,7 +81,7 @@ class svd::SvdEngine{
 
 class svd::SvdCudaEngine : public svd::SvdEngine{
     protected:
-        double *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
+        float *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
         int lWork = 0;
         int *deviceInfo;
         cusolverDnHandle_t cusolverH;
@@ -98,7 +98,7 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
         std::vector<Matrix*> getOutputMatrices();
 
     private:
-        double* deviceRWork;
+        float* deviceRWork;
 };
 
 class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
@@ -109,7 +109,7 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         std::vector<Matrix*> getOutputMatrices();
 
     private:
-        double tolerance;
+        float tolerance;
         int maxSweeps;
         int econ = 0;
         gesvdjInfo_t gesvdjParams;

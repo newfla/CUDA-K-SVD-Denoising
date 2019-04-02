@@ -15,7 +15,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
     //cusolverDnXgesvdjSetMaxSweeps(gesvdjParams, maxSweeps);
 
     //Allocate Space on device
-    cusolverDnDgesvdj_bufferSize(
+    cusolverDnSgesvdj_bufferSize(
         cusolverH, 
         jobZ,
         econ,
@@ -37,7 +37,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
 void CuSolverGeSvdJ::work(){
 
     //DGESVDJ
-    cusolverDnDgesvdj(
+    cusolverDnSgesvdj(
         cusolverH,
         jobZ,
         econ,
@@ -56,7 +56,7 @@ void CuSolverGeSvdJ::work(){
         gesvdjParams
     );
     cudaDeviceSynchronize();
-    //printStat();
+    printStat();
 }
 
 std::vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){

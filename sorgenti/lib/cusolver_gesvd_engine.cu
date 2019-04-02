@@ -18,7 +18,7 @@ void CuSolverGeSvd::init(Matrix* matrix){
 void CuSolverGeSvd::work(){
 
     //DGESVD
-    cusolverDnDgesvd(
+    cusolverDnSgesvd(
         cusolverH,
         'A',
         'A',

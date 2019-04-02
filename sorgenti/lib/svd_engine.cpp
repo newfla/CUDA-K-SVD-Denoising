@@ -4,7 +4,7 @@ using namespace svd;
 
 SvdEngine::~SvdEngine(){
    // std::cout<<"\nengine";
-   delete input;
+   //delete input;
    for(Matrix* matrix : output)
     delete matrix;
 }

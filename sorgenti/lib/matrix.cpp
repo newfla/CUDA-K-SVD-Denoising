@@ -2,7 +2,7 @@
 
 using namespace svd;
 
-Matrix::Matrix(int m, int n, int ld, double* matrix){
+Matrix::Matrix(int m, int n, int ld, float* matrix){
   this->m = m;
   this->n = n;
   this->ld = ld;
@@ -15,10 +15,7 @@ Matrix::~Matrix(){
 }
 
 Matrix* Matrix::randomMatrix(int m, int n, int ld){
-  double* matrix;
-  try{
-      matrix = new double[ld*n]();
-  }catch(std::bad_alloc&){std::cout<<"Bad alloc on host\n";}
+  float* matrix = new float[ld*n]();
   
   Matrix* out = new Matrix(m, n, ld, matrix);
   std::random_device rd;

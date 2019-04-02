@@ -4,8 +4,8 @@ class Matrix{
     + int m
     + int n
     + int ld
-    + double* matrix
-    {static} + Matrix* randomMatrix (m,n,ld)
+    + float* matrix
+    {static} + Matrix* randomMatrix (int m, int n, int ld)
 
 }
 
@@ -19,11 +19,11 @@ abstract class SvdEngine{
 
 abstract class SvdCudaEngine{
 
-    # double* deviceA
-    # double* deviceU
-    # double* deviceS
-    # double* deviceVT
-    # double* deviceWork
+    # float* deviceA
+    # float* deviceU
+    # float* deviceS
+    # float* deviceVT
+    # float* deviceWork
     # int lWork;
     # int *deviceInfo;
     # cusolverDnHandle_t cusolverH
@@ -41,7 +41,7 @@ enum SvdEngineType{
 
 class CuSolverGeSvd{
 
-    - double* deviceRWork;
+    - float* deviceRWork;
 
     # init(Matrix*)
     # work( )
@@ -50,7 +50,7 @@ class CuSolverGeSvd{
 
 class CuSolverGeSvdJ{
 
-    - double tolerance;
+    - float tolerance;
     - int maxSweeps;
     - int econ;
     - gesvdjInfo_t gesvdjParams;
