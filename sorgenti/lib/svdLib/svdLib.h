@@ -2,7 +2,8 @@
 #include <cstdint>
 #include <random>
 #include <vector>
-#include <iostream> //TODO da togliere poi
+#include <chrono>
+#include <iostream>
 #include <cusolverDn.h>
 
 namespace svd{
@@ -24,7 +25,8 @@ class svd::Matrix{
 
     public:
         int m, n, ld;
-        float* matrix;
+        float* matrix = NULL;
+        float onDevice = false;
 
         Matrix(int, int, int, float*);
         ~Matrix();
@@ -37,15 +39,9 @@ class svd::Matrix{
 class svd::TimeElapsed{
 
     public:
-        int64_t getInitTime();
-        int64_t getWorkingTime();
-        int64_t getFinalizeTime();
-        int64_t getTotalTime();
-
-    private:
         int64_t init, working, finalize;
 
-    friend SvdContainer;
+        int64_t getTotalTime();
 };
 
 class svd::SvdContainer{
@@ -58,8 +54,8 @@ class svd::SvdContainer{
         TimeElapsed* getTimeElapsed();
 
     private:
-        TimeElapsed* timeElapsed;
-        SvdEngine* svdEngine;
+        TimeElapsed* timeElapsed = NULL;
+        SvdEngine* svdEngine = NULL;
 };
 
 class svd::SvdEngine{
@@ -69,41 +65,48 @@ class svd::SvdEngine{
         static SvdEngine* factory(SvdEngineType type);
 
     protected:
-        Matrix *input;
+        Matrix *input = NULL;
         std::vector<Matrix*> output;
         
         virtual void init(Matrix*) ;
         virtual void work() = 0;
         virtual std::vector<Matrix*> getOutputMatrices() = 0;
+        SvdEngine();
 
         friend SvdContainer;
 };
 
 class svd::SvdCudaEngine : public svd::SvdEngine{
     protected:
-        float *deviceA, *deviceU, *deviceS, *deviceVT, *deviceWork;
+        float *deviceA , *deviceU, *deviceS, *deviceVT, *deviceWork;
         int lWork = 0;
         int *deviceInfo;
         cusolverDnHandle_t cusolverH;
 
+        SvdCudaEngine();
         virtual void init(Matrix*);
         virtual std::vector<Matrix*> getOutputMatrices();
+
 };
 
 class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
 
-    public:
+    protected:
+        CuSolverGeSvd();
         void init(Matrix*);
         void work();
         std::vector<Matrix*> getOutputMatrices();
 
     private:
         float* deviceRWork;
+
+    friend SvdEngine;
 };
 
 class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
 
-    public:
+    protected:
+        CuSolverGeSvdJ();
         void init(Matrix*);
         void work();
         std::vector<Matrix*> getOutputMatrices();
@@ -116,6 +119,8 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
         void printStat();
+
+    friend SvdEngine;
 
 };
 

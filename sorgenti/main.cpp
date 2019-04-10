@@ -1,7 +1,11 @@
 #include <iostream>
 #include<string>
-#include <svdLib.h>
+#include <denoisingLib.h>
+#include<CImg.h>
+
+using namespace denoising;
 using namespace svd;
+using namespace cimg_library;
 
 SvdContainer* buildExample(int m, int n, SvdEngineType type){
 
@@ -21,9 +25,9 @@ void exec(int m, int n, int tot){
         TimeElapsed* timeElapsed = pointer->getTimeElapsed();
 
         std::cout<<"Matrix #"<<i+1<<std::endl;
-        std::cout<<"Init Time: " << timeElapsed->getInitTime()<<"ms"<<std::endl;
-        std::cout<<"Working Time: " << (double)(timeElapsed->getWorkingTime())/1000.<<"s"<<std::endl;
-        std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<"ms"<<std::endl;
+        std::cout<<"Init Time: " << timeElapsed->init<<"ms"<<std::endl;
+        std::cout<<"Working Time: " << (((double)timeElapsed->working)/1000.)<<"s"<<std::endl;
+        std::cout<<"Finalize Time: " << timeElapsed->finalize<<"ms"<<std::endl;
         std::cout<<"-----------------------------------------------"<<std::endl;
 
         delete pointer;
@@ -45,9 +49,9 @@ void exec2(int m, int n, int tot){
         TimeElapsed* timeElapsed = pointer->getTimeElapsed();
 
         std::cout<<"------------------QR--------------------"<<std::endl;
-        std::cout<<"Init Time: " << timeElapsed->getInitTime()<<"ms"<<std::endl;
-        std::cout<<"Working Time: " << (double)(timeElapsed->getWorkingTime())/1000.<<"s"<<std::endl;
-        std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<"ms"<<std::endl;
+        std::cout<<"Init Time: " << timeElapsed->init<<"ms"<<std::endl;
+        std::cout<<"Working Time: " << (((double)timeElapsed->working)/1000.)<<"s"<<std::endl;
+        std::cout<<"Finalize Time: " << timeElapsed->finalize<<"ms"<<std::endl;
         std::cout<<std::endl;
 
         SvdContainer* pointer1 = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
@@ -58,9 +62,9 @@ void exec2(int m, int n, int tot){
         Matrix* matrix1S = pointer1->getOutputMatrices()[1];
         timeElapsed = pointer1->getTimeElapsed();
 
-        std::cout<<"Init Time: " << timeElapsed->getInitTime()<<"ms"<<std::endl;
-        std::cout<<"Working Time: " << (double)(timeElapsed->getWorkingTime())/1000.<<"s"<<std::endl;
-        std::cout<<"Finalize Time: " << timeElapsed->getFinalizeTime()<<"ms"<<std::endl;
+        std::cout<<"Init Time: " << timeElapsed->init<<"ms"<<std::endl;
+        std::cout<<"Working Time: " << (((double)timeElapsed->working)/1000.)<<"s"<<std::endl;
+        std::cout<<"Finalize Time: " << timeElapsed->finalize<<"ms"<<std::endl;
 
         float maxError = 0;
 
@@ -81,17 +85,26 @@ void exec2(int m, int n, int tot){
 
 int main(int argc, char *argv[]) {
 
-    int m = 800, n = 800;
-
-    if(argc==3){
-        m = std::stoi(argv[1]);
-        n = std::stoi(argv[2]);
-    }
+    /*
 
     exec2(1024,512,10);
     exec2(2048,1024,10);
     exec2(4096,2048,10);
     exec2(8192,4096,5);
+
+    */
+
+  /* CImg<unsigned char> image("../img/dora.jpg");
+   
+   CImgDisplay draw_dispR(image.RGBtoYCbCr().channel(0),"Dora");
+   
+   while (!draw_dispR.is_closed()){
+    draw_dispR.wait();
+  }*/
+
+    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Tesi/img/input", "/home/flavio/Progetti/Tesi/img/output");
+    batchDenoiser->seqBatchDenoising();
+    delete batchDenoiser;
 
     return 0;
 }

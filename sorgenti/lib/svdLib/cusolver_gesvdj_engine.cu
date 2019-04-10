@@ -4,6 +4,8 @@
 
 using namespace svd;
 
+CuSolverGeSvdJ::CuSolverGeSvdJ(){}
+
 void CuSolverGeSvdJ::init(Matrix* matrix){
 
     //Call parent method

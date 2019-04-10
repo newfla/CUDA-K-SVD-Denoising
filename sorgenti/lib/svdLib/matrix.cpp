@@ -10,8 +10,8 @@ Matrix::Matrix(int m, int n, int ld, float* matrix){
 }
 
 Matrix::~Matrix(){
-  //std::cout<<"\nMatrix\n";
-  delete[] matrix;
+  if(matrix!=NULL)
+    delete[] matrix;
 }
 
 Matrix* Matrix::randomMatrix(int m, int n, int ld){

@@ -1,95 +1,151 @@
 @startuml diagrammaSVD
 
-class Matrix{
-    + int m
-    + int n
-    + int ld
-    + float* matrix
-    {static} + Matrix* randomMatrix (int m, int n, int ld)
+package svdLib {
+    class Matrix{
+        + int m
+        + int n
+        + int ld
+        + bool onDevice = false 
+        + float* matrix
+        {static} + Matrix* randomMatrix (int m, int n, int ld)
 
+    }
+
+    abstract class SvdEngine{
+        
+        {abstract} # init(Matrix*)
+        {abstract} # vector<Matrix*> getOutputMatrices( )
+        {abstract} # work( )
+        {static} + SvdEngine factory (SvdEngineType)
+    }
+
+    abstract class SvdCudaEngine{
+
+        # float* deviceA
+        # float* deviceU
+        # float* deviceS
+        # float* deviceVT
+        # float* deviceWork
+        # int lWork;
+        # int* deviceInfo;
+        # cusolverDnHandle_t cusolverH
+        
+
+        #  init(Matrix*)
+        #  vector<Matrix*> getOutputMatrices()
+    }
+
+    enum SvdEngineType{
+            CUSOLVER_GESVD
+            CUSOLVER_GESVDJ
+    }
+
+    class CuSolverGeSvd{
+
+        - float* deviceRWork;
+
+        # init(Matrix*)
+        # work( )
+        # vector<Matrix*> getOutputMatrices();
+    }
+
+    class CuSolverGeSvdJ{
+
+        - float tolerance
+        - int maxSweeps
+        - int econ
+        - gesvdjInfo_t gesvdjParams
+        - cusolverEigMode_t jobZ
+
+        - printStat()
+        # init(Matrix*)
+        # work( )
+        # vector<Matrix*> getOutputMatrices()
+    }
+
+
+    class TimeElapsed{
+        + int init
+        + int working
+        + int finalize
+        + int getTotalTime()
+    }
+
+    note bottom: Time in milliseconds
+
+    class SvdContainer{
+
+        + SvdContainer(SvdEngine*)
+        + setMatrix(Matrix*)
+        + vector<Matrix*> getOutputMatrices()
+        + TimeElapsed* getTimeElapsed()
+    }
+
+    SvdContainer -->  "*" Matrix 
+    SvdContainer --> "1" SvdEngine
+    TimeElapsed "1" <- SvdContainer
+    SvdEngine -> "*" Matrix
+    SvdEngine -> "1" SvdEngineType
+    SvdEngine <|-- SvdCudaEngine : extends
+    SvdCudaEngine <|-- CuSolverGeSvdJ : extends
+    SvdCudaEngine <|-- CuSolverGeSvd : extends
+
+    hide SvdEngineType methods
+    hide SvdContainer fields
+    hide SvdEngine fields
 }
 
-abstract class SvdEngine{
-    
-    {abstract} # init(Matrix*)
-    {abstract} # vector<Matrix*> getOutputMatrices( )
-    {abstract} # work( )
-    {static} + SvdEngine factory (SvdEngineType)
+package denoisingLib{
+
+    enum DenoiserType{
+            CUDA_K_GESVD
+            CUDA_K_GESVDJ
+    }
+
+    abstract class Denoiser{
+
+        - String inputFile
+        - String outputFile
+        - CImg<float>* inputImage
+
+        {abstract} # bool loadImage()
+        {abstract} # bool saveImage()
+        {abstract} # bool internalDenoising()
+        {abstract} + signed char denoising()
+        + TimeElapsed* getTimeElapsed()
+        {static} + Denoiser factory (DenoiserType, String input, String output)
+    }
+
+    note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
+
+    class CudaSvdDenoiser{
+        # bool loadImage()
+        # bool saveImage()
+        # bool internalDenoising()
+        + signed char denoising()
+    }
+
+    class BatchDenoiser{
+        + vector<TimeElapsed*> getTimeElapsed() 
+        + vector<signed char> seqBatchDenoising()
+        {static} + BatchDenoiser* factory (DenoiserType type, String inputFolder, String outputFolder)
+    }
+
+    note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 
+
+
+    Denoiser --> "1" TimeElapsed
+    Denoiser --> "*" Matrix
+    Denoiser --> "*" SvdContainer
+    CudaSvdDenoiser --|> Denoiser : extends
+    CudaSvdDenoiser --> "1" DenoiserType
+    BatchDenoiser --> "*" Denoiser
+    BatchDenoiser --> "*" TimeElapsed
+
+    hide BatchDenoiser fields
+    hide CudaSvdDenoiser fields
+    hide DenoiserType methods
 }
 
-abstract class SvdCudaEngine{
-
-    # float* deviceA
-    # float* deviceU
-    # float* deviceS
-    # float* deviceVT
-    # float* deviceWork
-    # int lWork;
-    # int *deviceInfo;
-    # cusolverDnHandle_t cusolverH
-    
-
-    #  init(Matrix*)
-    #  vector<Matrix*> getOutputMatrices( )
-}
-
-enum SvdEngineType{
-        CUSOLVER_GESVD
-        CUSOLVER_GESVDJ
-        ...
-}
-
-class CuSolverGeSvd{
-
-    - float* deviceRWork;
-
-    # init(Matrix*)
-    # work( )
-    # vector<Matrix*> getOutputMatrices();
-}
-
-class CuSolverGeSvdJ{
-
-    - float tolerance;
-    - int maxSweeps;
-    - int econ;
-    - gesvdjInfo_t gesvdjParams;
-    - cusolverEigMode_t jobZ;
-
-    - printStat();
-    # init(Matrix*)
-    # work( )
-    # vector<Matrix*> getOutputMatrices();
-}
-
-
-class TimeElapsed{
-    + int getInitTime()
-    + int getWorkingTime()
-    + int getFinalizeTime()
-    + int getTotalTime()
-}
-
-note bottom: Time in milliseconds
-
-class SvdContainer{
-    + SvdContainer(SvdEngine*)
-    + setMatrix(Matrix*)
-    + Matrix*[ ] getOutputMatrices( )
-    + TimeElapsed* getTimeElapsed( )
-}
-
-SvdContainer ..>  Matrix : use
-SvdContainer --> "1" SvdEngine
-TimeElapsed "1" <- SvdContainer
-SvdEngine -> "*" Matrix
-SvdEngine <|-- SvdCudaEngine : extends
-SvdCudaEngine <|-- CuSolverGeSvdJ : extends
-SvdCudaEngine <|-- CuSolverGeSvd : extends
-
-hide SvdEngine fields
-hide TimeElapsed fields
-hide SvdContainer fields
-hide SvdEngineType methods
 
 @enduml

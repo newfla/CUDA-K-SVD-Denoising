@@ -1,6 +1,4 @@
 #include <svdLib.h>
-#include <cstdlib>
-#include <chrono>
 
 using namespace svd;
 
@@ -10,9 +8,11 @@ SvdContainer::SvdContainer(SvdEngine* svdEngine){
 }
 
 SvdContainer::~SvdContainer(){
-   // std::cout<<"\nContainer";
-    delete timeElapsed;
-    delete svdEngine;
+    if(timeElapsed!=NULL)
+        delete timeElapsed;
+        
+    if(svdEngine!=NULL)
+        delete svdEngine;
 }
 
 void SvdContainer::setMatrix(Matrix* matrix){

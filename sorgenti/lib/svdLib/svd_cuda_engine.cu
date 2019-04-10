@@ -4,6 +4,8 @@
 
 using namespace svd;
 
+SvdCudaEngine::SvdCudaEngine(){}
+
 void SvdCudaEngine::init(Matrix* matrix){
 
     //Call parent method
@@ -19,15 +21,17 @@ void SvdCudaEngine::init(Matrix* matrix){
     size_t space = (matrix->ld)*(matrix->n)*sizeof(float);
 
     //Allocate memory on device
-    //std::cout<<"risultato cudaMalloc di A: "<<
-    cudaMalloc((void**) &deviceA, space);//<<std::endl;
     cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(float));
     cudaMalloc((void**) &deviceS, (matrix->n)*sizeof(float));
     cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(float));
 
     //Copy matrix on device
-    //std::cout<<"risultato memcpy di A: "<<
-    cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);//<<std::endl;
+    if(!matrix->onDevice){
+        cudaMalloc((void**) &deviceA, space);
+        cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);
+    }
+    else
+        deviceA = matrix->matrix;
 
 } 
 

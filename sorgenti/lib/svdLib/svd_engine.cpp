@@ -2,11 +2,15 @@
 
 using namespace svd;
 
+SvdEngine::SvdEngine(){
+
+}
+
 SvdEngine::~SvdEngine(){
-   // std::cout<<"\nengine";
-   //delete input;
-   for(Matrix* matrix : output)
-    delete matrix;
+  //  if(input!=NULL)
+    //    delete input;
+    for(Matrix* matrix : output)
+        delete matrix;
 }
 
 void SvdEngine::init(Matrix* matrix){
