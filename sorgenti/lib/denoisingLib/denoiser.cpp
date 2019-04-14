@@ -43,7 +43,8 @@ bool Denoiser::saveImage(){
 
     CImg<float> image(outputMatrix->ld, outputMatrix->n);
 
-    image._data = outputMatrix->matrix;
+    //TODO in realtà sarebbe deviceVector
+    image._data = outputMatrix->hostVector->data();
 
     //TODO da rimuovere
     image._is_shared = true;
@@ -66,8 +67,8 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
     {
         case CUDA_K_GESVD:
         case CUDA_K_GESVDJ:
-            denoiser = new CudaSvdDenoiser();
-            ((CudaSvdDenoiser*) denoiser)-> type = type;
+            denoiser = new CudaKSvdDenoiser();
+            ((CudaKSvdDenoiser*) denoiser)-> type = type;
             break;
             
         default:

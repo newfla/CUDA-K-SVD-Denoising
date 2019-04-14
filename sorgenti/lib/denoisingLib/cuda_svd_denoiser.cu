@@ -3,13 +3,13 @@
 
 using namespace denoising;
 
-CudaSvdDenoiser::CudaSvdDenoiser(){}
+CudaKSvdDenoiser::CudaKSvdDenoiser(){}
 
-CudaSvdDenoiser::~CudaSvdDenoiser(){
+CudaKSvdDenoiser::~CudaKSvdDenoiser(){
     //TODO
 }
 
-signed char CudaSvdDenoiser::denoising(){
+signed char CudaKSvdDenoiser::denoising(){
 
     if(!loadImage())
         return -1;    
@@ -22,20 +22,46 @@ signed char CudaSvdDenoiser::denoising(){
     return 0;
 }
 
-bool CudaSvdDenoiser::loadImage(){
+bool CudaKSvdDenoiser::loadImage(){
 
     //TODO
     return Denoiser::loadImage();
 }
 
-bool CudaSvdDenoiser::saveImage(){
+bool CudaKSvdDenoiser::saveImage(){
 
     //TODO
     return Denoiser::saveImage();
 }
 
-bool CudaSvdDenoiser::internalDenoising(){
+bool CudaKSvdDenoiser::internalDenoising(){
+
+    createPatches();
 
     //TODO
     return +1;
+}
+
+void CudaKSvdDenoiser::createPatches(){
+
+    std::vector<float> img(inputMatrix->deviceVector->data(), inputMatrix->deviceVector->data() + ((inputMatrix->m * inputMatrix->n)));
+
+    for(int i = 0; i + patchSquareDim < inputMatrix->n; i+= slidingPatch){ //n = ImageWidth
+
+        for(int j = 0; j + patchSquareDim < inputMatrix->m; j+= slidingPatch){ // m = ImagaeHeight
+
+            std::vector<float> patch;
+            int startPatch = i * inputMatrix->m + j;
+
+            for(int k = startPatch; k < startPatch + patchSquareDim * inputMatrix->m; k++)
+
+                patch.insert(patch.end(), img.begin() + k, img.begin() + k + patchSquareDim);
+
+            
+            
+        }
+        
+    }
+    
+    
 }

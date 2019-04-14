@@ -7,8 +7,7 @@ SvdEngine::SvdEngine(){
 }
 
 SvdEngine::~SvdEngine(){
-  //  if(input!=NULL)
-    //    delete input;
+    delete input;
     for(Matrix* matrix : output)
         delete matrix;
 }

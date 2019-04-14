@@ -9,7 +9,7 @@ namespace denoising{
 
     //Class section
     class Denoiser;
-    class CudaSvdDenoiser;
+    class CudaKSvdDenoiser;
     class BatchDenoiser;
 
     //Enum section
@@ -25,6 +25,8 @@ class denoising::Denoiser{
         svd::TimeElapsed* getTimeElapsed();
 
     protected:
+        svd::Matrix *inputMatrix = NULL, *outputMatrix = NULL;
+
         virtual bool loadImage();
         virtual bool saveImage();
         virtual bool internalDenoising() = 0;
@@ -32,17 +34,17 @@ class denoising::Denoiser{
 
     private:
         std::string inputFile, outputFile;
-        svd::Matrix *inputMatrix = NULL, *outputMatrix = NULL;
         svd::TimeElapsed* timeElapsed = NULL;
         cimg_library::CImg<float> *inputImage = NULL;
 
     friend BatchDenoiser;
+
 };
 
-class denoising::CudaSvdDenoiser : public denoising::Denoiser{
+class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
 
     public:
-        ~CudaSvdDenoiser();
+        ~CudaKSvdDenoiser();
         signed char denoising();
 
     protected:
@@ -51,9 +53,12 @@ class denoising::CudaSvdDenoiser : public denoising::Denoiser{
         bool internalDenoising();
 
     private:
+        int patchSquareDim = 8;
+        int slidingPatch = 2;
         DenoiserType type;
 
-        CudaSvdDenoiser();
+        CudaKSvdDenoiser();
+        void createPatches();
 
     friend Denoiser;
 };

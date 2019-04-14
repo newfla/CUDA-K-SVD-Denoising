@@ -43,6 +43,7 @@ void CuSolverGeSvd::work(){
 
 std::vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
     cudaFree(deviceInfo);
-    cudaFree(deviceRWork);
+    if(deviceRWork != NULL )
+        cudaFree(deviceRWork);
     return SvdCudaEngine::getOutputMatrices(); 
 }

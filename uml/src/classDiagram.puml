@@ -5,10 +5,10 @@ package svdLib {
         + int m
         + int n
         + int ld
-        + bool onDevice = false 
-        + float* matrix
+        + host_vector* hostVector
+        + device_vector* deviceVector
+        + Matrix* clone()
         {static} + Matrix* randomMatrix (int m, int n, int ld)
-
     }
 
     abstract class SvdEngine{
@@ -118,7 +118,11 @@ package denoisingLib{
 
     note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
 
-    class CudaSvdDenoiser{
+    class CudaKSvdDenoiser{
+        - int patchSquareDim
+        - int slidingPatch
+
+        - void createPatch()
         # bool loadImage()
         # bool saveImage()
         # bool internalDenoising()
@@ -137,13 +141,12 @@ package denoisingLib{
     Denoiser --> "1" TimeElapsed
     Denoiser --> "*" Matrix
     Denoiser --> "*" SvdContainer
-    CudaSvdDenoiser --|> Denoiser : extends
-    CudaSvdDenoiser --> "1" DenoiserType
+    CudaKSvdDenoiser --|> Denoiser : extends
+    CudaKSvdDenoiser --> "1" DenoiserType
     BatchDenoiser --> "*" Denoiser
     BatchDenoiser --> "*" TimeElapsed
 
     hide BatchDenoiser fields
-    hide CudaSvdDenoiser fields
     hide DenoiserType methods
 }
 

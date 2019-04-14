@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 
 using namespace svd;
+using namespace thrust;
 
 SvdCudaEngine::SvdCudaEngine(){}
 
@@ -18,7 +19,7 @@ void SvdCudaEngine::init(Matrix* matrix){
     cudaMalloc ((void**)&deviceInfo, sizeof(int));
     
     //Save matrix mem dimension
-    size_t space = (matrix->ld)*(matrix->n)*sizeof(float);
+//    size_t space = (matrix->ld)*(matrix->n)*sizeof(float);
 
     //Allocate memory on device
     cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(float));
@@ -26,13 +27,9 @@ void SvdCudaEngine::init(Matrix* matrix){
     cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(float));
 
     //Copy matrix on device
-    if(!matrix->onDevice){
-        cudaMalloc((void**) &deviceA, space);
-        cudaMemcpy(deviceA, matrix->matrix, space, cudaMemcpyHostToDevice);
-    }
-    else
-        deviceA = matrix->matrix;
-
+    if(matrix->deviceVector == NULL)
+        matrix->deviceVector = new device_vector<float>(matrix->hostVector->begin(), matrix->hostVector->end());
+    deviceA = raw_pointer_cast(matrix->deviceVector->data());
 } 
 
 std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
@@ -45,26 +42,27 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     hostVT = new float[(input->n)*(input->n)]();
     hostS = new float[input->n]();
 
+    //Copy back to host
+    cudaMemcpy(hostU, deviceU, (input->ld)*(input->m)*sizeof(float), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostVT, deviceVT, (input->n)*(input->n)*sizeof(float), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostS, deviceS, (input->n)*sizeof(float), cudaMemcpyDeviceToHost);
+
     //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, hostU);
     outputVT = new Matrix(input->n, input->n, input->n, hostVT);
     outputS = new Matrix (1, input->n, 1, hostS);
 
-    //Copy back to host
-    cudaMemcpy(hostU, deviceU, (outputU->ld)*(outputU->m)*sizeof(float), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostVT, deviceVT, (outputVT->n)*(outputVT->n)*sizeof(float), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostS, deviceS, (outputS->n)*sizeof(float), cudaMemcpyDeviceToHost);
-
     //Save SVD
     output = {outputU, outputS, outputVT};
 
-    //Cleaning cuda memory
+    //Cleaning cuda memory 
     cudaFree(deviceA);
     cudaFree(deviceU);
     cudaFree(deviceVT);
     cudaFree(deviceS);
     cudaFree(deviceWork);
     cusolverDnDestroy(cusolverH);
+    input->hostVector = NULL;
 
     cudaDeviceReset();
 

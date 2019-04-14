@@ -5,6 +5,8 @@
 #include <chrono>
 #include <iostream>
 #include <cusolverDn.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 namespace svd{
 
@@ -25,11 +27,12 @@ class svd::Matrix{
 
     public:
         int m, n, ld;
-        float* matrix = NULL;
-        float onDevice = false;
+        thrust::host_vector<float> *hostVector = NULL;
+        thrust::device_vector<float> *deviceVector = NULL;
 
         Matrix(int, int, int, float*);
         ~Matrix();
+        Matrix* clone();
         static Matrix* randomMatrix(int, int, int);
     
     private:
@@ -98,7 +101,7 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
         std::vector<Matrix*> getOutputMatrices();
 
     private:
-        float* deviceRWork;
+        float* deviceRWork = NULL;
 
     friend SvdEngine;
 };
