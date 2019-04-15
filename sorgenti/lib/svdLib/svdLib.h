@@ -31,9 +31,13 @@ class svd::Matrix{
         thrust::device_vector<float> *deviceVector = NULL;
 
         Matrix(int, int, int, float*);
+        Matrix(int, int, int, thrust::host_vector<float>*);
+        Matrix(int, int, int, thrust::device_vector<float>*);
         ~Matrix();
-        Matrix* clone();
-        static Matrix* randomMatrix(int, int, int);
+        Matrix* cloneHost();
+        void copyOnDevice();
+        void copyOnHost();
+        static Matrix* randomMatrixHost(int, int, int);
     
     private:
         Matrix();
@@ -53,7 +57,7 @@ class svd::SvdContainer{
         SvdContainer(SvdEngine*);
         ~SvdContainer();
         void setMatrix(Matrix*);
-        std::vector<Matrix*> getOutputMatrices();
+        thrust::host_vector<Matrix*> getOutputMatrices();
         TimeElapsed* getTimeElapsed();
 
     private:
@@ -69,11 +73,11 @@ class svd::SvdEngine{
 
     protected:
         Matrix *input = NULL;
-        std::vector<Matrix*> output;
+        thrust::host_vector<Matrix*> output;
         
         virtual void init(Matrix*) ;
         virtual void work() = 0;
-        virtual std::vector<Matrix*> getOutputMatrices() = 0;
+        virtual thrust::host_vector<Matrix*> getOutputMatrices() = 0;
         SvdEngine();
 
         friend SvdContainer;
@@ -88,7 +92,7 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
 
         SvdCudaEngine();
         virtual void init(Matrix*);
-        virtual std::vector<Matrix*> getOutputMatrices();
+        virtual thrust::host_vector<Matrix*> getOutputMatrices();
 
 };
 
@@ -98,7 +102,7 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
         CuSolverGeSvd();
         void init(Matrix*);
         void work();
-        std::vector<Matrix*> getOutputMatrices();
+        thrust::host_vector<Matrix*> getOutputMatrices();
 
     private:
         float* deviceRWork = NULL;
@@ -112,7 +116,7 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         CuSolverGeSvdJ();
         void init(Matrix*);
         void work();
-        std::vector<Matrix*> getOutputMatrices();
+        thrust::host_vector<Matrix*> getOutputMatrices();
 
     private:
         float tolerance;

@@ -7,16 +7,18 @@ package svdLib {
         + int ld
         + host_vector* hostVector
         + device_vector* deviceVector
-        + Matrix* clone()
-        {static} + Matrix* randomMatrix (int m, int n, int ld)
+        + Matrix* cloneHost()
+        + void copyOnDevice()
+        + void copyOnHost()
+        {static} + Matrix* randomMatrixHost(int m, int n, int ld)
     }
 
     abstract class SvdEngine{
         
         {abstract} # init(Matrix*)
-        {abstract} # vector<Matrix*> getOutputMatrices( )
+        {abstract} # host_vector<Matrix*> getOutputMatrices()
         {abstract} # work( )
-        {static} + SvdEngine factory (SvdEngineType)
+        {static} + SvdEngine factory(SvdEngineType)
     }
 
     abstract class SvdCudaEngine{
@@ -32,7 +34,7 @@ package svdLib {
         
 
         #  init(Matrix*)
-        #  vector<Matrix*> getOutputMatrices()
+        #  host_vector<Matrix*> getOutputMatrices()
     }
 
     enum SvdEngineType{
@@ -46,7 +48,7 @@ package svdLib {
 
         # init(Matrix*)
         # work( )
-        # vector<Matrix*> getOutputMatrices();
+        # host_vector<Matrix*> getOutputMatrices();
     }
 
     class CuSolverGeSvdJ{
@@ -60,7 +62,7 @@ package svdLib {
         - printStat()
         # init(Matrix*)
         # work( )
-        # vector<Matrix*> getOutputMatrices()
+        # host_vector<Matrix*> getOutputMatrices()
     }
 
 
@@ -77,7 +79,7 @@ package svdLib {
 
         + SvdContainer(SvdEngine*)
         + setMatrix(Matrix*)
-        + vector<Matrix*> getOutputMatrices()
+        + host_vector<Matrix*> getOutputMatrices()
         + TimeElapsed* getTimeElapsed()
     }
 
@@ -121,8 +123,10 @@ package denoisingLib{
     class CudaKSvdDenoiser{
         - int patchSquareDim
         - int slidingPatch
+        - int atoms
 
         - void createPatch()
+        - void initDictionary()
         # bool loadImage()
         # bool saveImage()
         # bool internalDenoising()
@@ -130,8 +134,8 @@ package denoisingLib{
     }
 
     class BatchDenoiser{
-        + vector<TimeElapsed*> getTimeElapsed() 
-        + vector<signed char> seqBatchDenoising()
+        + host_vector<TimeElapsed*> getTimeElapsed() 
+        + host_vector<signed char> seqBatchDenoising()
         {static} + BatchDenoiser* factory (DenoiserType type, String inputFolder, String outputFolder)
     }
 
@@ -141,8 +145,9 @@ package denoisingLib{
     Denoiser --> "1" TimeElapsed
     Denoiser --> "*" Matrix
     Denoiser --> "*" SvdContainer
-    CudaKSvdDenoiser --|> Denoiser : extends
-    CudaKSvdDenoiser --> "1" DenoiserType
+    CudaKSvdDenoiser -|> Denoiser : extends
+    DenoiserType "1"<-- CudaKSvdDenoiser
+    CudaKSvdDenoiser --> "*" Matrix
     BatchDenoiser --> "*" Denoiser
     BatchDenoiser --> "*" TimeElapsed
 

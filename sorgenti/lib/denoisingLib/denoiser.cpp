@@ -5,20 +5,30 @@ using namespace svd;
 using namespace cimg_library;
 
 Denoiser::Denoiser(){
+
     timeElapsed = new TimeElapsed();
 }
-
+//**************
+//  Destructor
+//  Free images 
+//*************
 Denoiser::~Denoiser(){
-    if(inputImage!=NULL) //Viene fatta la free anche del vettore in inputMatrix
+    
+    if(inputImage!=NULL)
        delete inputImage;
-
-    //La free del vettore in outputMatrix viene fatta quando l'oggetto Cimage in saveImage viene distrutto
+    
+    //outputImage is alreay freed in saveImage
 
     if(timeElapsed!=NULL)
         delete timeElapsed;
 }
 
+//**************************
+//  Load image
+//  output:  + staus (bool)
+//*************************
 bool Denoiser::loadImage(){
+
     auto start = std::chrono::steady_clock::now();
 
     inputImage = new CImg<float>(inputFile.c_str());
@@ -34,6 +44,10 @@ bool Denoiser::loadImage(){
     return true;
 }
 
+//**************************
+//  Save image
+//  output:  + staus (bool)
+//*************************
 bool Denoiser::saveImage(){
 
     auto start = std::chrono::steady_clock::now();
@@ -61,6 +75,13 @@ bool Denoiser::saveImage(){
     return true;
 }
 
+//************************************************************************
+//  Denoiser Factory method instantiates an object based on type
+//  input:  + type (DenoiserType) of denoisers that will be used
+//          + inputFile path from which load image
+//          + outputFile path where save image   
+//  output: + Denoiser (Denoiser*)
+//***********************************************************************
 Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::string outputFile){
     Denoiser* denoiser = NULL;
     switch (type)

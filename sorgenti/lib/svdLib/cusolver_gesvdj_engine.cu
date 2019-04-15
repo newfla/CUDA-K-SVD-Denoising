@@ -6,6 +6,10 @@ using namespace svd;
 
 CuSolverGeSvdJ::CuSolverGeSvdJ(){}
 
+//*******************************************************************************************************
+//  Save the vector on which SVD will be executed, create cuSolver additional data and move data on HOST
+//  input:  + matrix (Matrix*) float, collum-major
+//******************************************************************************************************
 void CuSolverGeSvdJ::init(Matrix* matrix){
 
     //Call parent method
@@ -36,6 +40,9 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
     cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
 }
 
+//*********************************************
+//  CuSolver SVD decomposition (JACOBI METHOD)
+//********************************************
 void CuSolverGeSvdJ::work(){
 
     //DGESVDJ
@@ -61,13 +68,23 @@ void CuSolverGeSvdJ::work(){
     printStat();
 }
 
-std::vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){
+//******************************************************************
+//  Obtain input matrix SVD decompisition and free DEVICE resources 
+//  output:  + matrices (Matrix*) float, collum-major
+//*****************************************************************
+thrust::host_vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){
+    
     cudaFree(deviceInfo);
     cusolverDnDestroyGesvdjInfo(gesvdjParams);
     return SvdCudaEngine::getOutputMatrices(); 
 }
 
+//******************************************************************
+//  Print additional CuSolver stats
+//  output:  + matrices (Matrix*) float, collum-major
+//*****************************************************************
 void CuSolverGeSvdJ::printStat(){
+
     double residual = 0;
     int executedSweeps = 0;
 

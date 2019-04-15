@@ -6,6 +6,10 @@ using namespace svd;
 
 CuSolverGeSvd::CuSolverGeSvd(){}
 
+//*******************************************************************************************************
+//  Save the vector on which SVD will be executed, create cuSolver additional data and move data on HOST
+//  input:  + matrix (Matrix*) float, collum-major
+//******************************************************************************************************
 void CuSolverGeSvd::init(Matrix* matrix){
 
     //Call parent method
@@ -17,6 +21,9 @@ void CuSolverGeSvd::init(Matrix* matrix){
     
 }
 
+//*****************************************
+//  CuSOlver SVD decomposition (QR METHOD)
+//****************************************
 void CuSolverGeSvd::work(){
 
     //DGESVD
@@ -41,7 +48,12 @@ void CuSolverGeSvd::work(){
     cudaDeviceSynchronize();
 }
 
-std::vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
+//******************************************************************
+//  Obtain input matrix SVD decompisition and free DEVICE resources 
+//  output:  + matrices (Matrix*) float, collum-major
+//*****************************************************************
+thrust::host_vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
+    
     cudaFree(deviceInfo);
     if(deviceRWork != NULL )
         cudaFree(deviceRWork);

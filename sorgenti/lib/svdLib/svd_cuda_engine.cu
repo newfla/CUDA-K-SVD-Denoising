@@ -7,6 +7,10 @@ using namespace thrust;
 
 SvdCudaEngine::SvdCudaEngine(){}
 
+//*******************************************************************************************************
+//  Save the vector on which SVD will be executed, create cuSolver additional data and move data on HOST
+//  input:  + matrix (Matrix*) float, collum-major
+//******************************************************************************************************
 void SvdCudaEngine::init(Matrix* matrix){
 
     //Call parent method
@@ -17,9 +21,6 @@ void SvdCudaEngine::init(Matrix* matrix){
 
     //Alocate space for cusolverDnInfo
     cudaMalloc ((void**)&deviceInfo, sizeof(int));
-    
-    //Save matrix mem dimension
-//    size_t space = (matrix->ld)*(matrix->n)*sizeof(float);
 
     //Allocate memory on device
     cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(float));
@@ -30,9 +31,14 @@ void SvdCudaEngine::init(Matrix* matrix){
     if(matrix->deviceVector == NULL)
         matrix->deviceVector = new device_vector<float>(matrix->hostVector->begin(), matrix->hostVector->end());
     deviceA = raw_pointer_cast(matrix->deviceVector->data());
-} 
+}
 
-std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
+
+//******************************************************************
+//  Obtain input matrix SVD decompisition and free DEVICE resources 
+//  output:  + matrices (Matrix*) float, collum-major
+//*****************************************************************
+thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
 
     float *hostU, *hostVT, *hostS;
     Matrix *outputU, *outputVT, *outputS;
@@ -53,7 +59,9 @@ std::vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     outputS = new Matrix (1, input->n, 1, hostS);
 
     //Save SVD
-    output = {outputU, outputS, outputVT};
+    output.push_back(outputU);
+    output.push_back(outputS);
+    output.push_back(outputVT);
 
     //Cleaning cuda memory 
     cudaFree(deviceA);

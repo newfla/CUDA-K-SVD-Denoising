@@ -7,15 +7,6 @@ using namespace denoising;
 using namespace svd;
 using namespace cimg_library;
 
-SvdContainer* buildExample(int m, int n, SvdEngineType type){
-
-    SvdContainer* container = new SvdContainer(SvdEngine::factory(type));
-    container->setMatrix(Matrix::randomMatrix(m,n,m));
-
-    return container;
-}
-
-
 void testCuSolverSVD(int m, int n, int tot){
     std::cout<<"---------------------<<"<<m<<","<<n<<">>--------------------------"<<std::endl;
 
@@ -23,8 +14,8 @@ void testCuSolverSVD(int m, int n, int tot){
 
         std::cout<<std::endl<<"Matrix #"<<i+1<<std::endl;
 
-        Matrix* input = Matrix::randomMatrix(m,n,m);
-        Matrix * input1 = input->clone();
+        Matrix* input = Matrix::randomMatrixHost(m,n,m);
+        Matrix * input1 = input->cloneHost();
         
         SvdContainer* pointer = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVD));
         pointer->setMatrix(input);
@@ -90,8 +81,6 @@ int main(int argc, char *argv[]) {
     testCuSolverSVD(8192,4096,5);
 
     */
-
-    testReadWriteImage();
    
     return 0;
 }

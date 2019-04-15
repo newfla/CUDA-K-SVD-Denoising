@@ -11,6 +11,7 @@ namespace denoising{
     class Denoiser;
     class CudaKSvdDenoiser;
     class BatchDenoiser;
+    class PowFunctor;
 
     //Enum section
     enum DenoiserType{CUDA_K_GESVD, CUDA_K_GESVDJ};
@@ -55,11 +56,15 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
     private:
         int patchSquareDim = 8;
         int slidingPatch = 2;
+        int atoms = 256;
         DenoiserType type;
+        svd::Matrix* noisePatches = NULL;
+        svd::Matrix* dictionary = NULL;
 
         CudaKSvdDenoiser();
         void createPatches();
-
+        void initDictionary();
+        
     friend Denoiser;
 };
 
@@ -67,13 +72,13 @@ class denoising::BatchDenoiser{
 
     public:
         ~BatchDenoiser();
-        std::vector<svd::TimeElapsed*> getTimeElapsed();
-        std::vector<signed char> seqBatchDenoising();
+        thrust::host_vector<svd::TimeElapsed*> getTimeElapsed();
+        thrust::host_vector<signed char> seqBatchDenoising();
         static BatchDenoiser* factory(DenoiserType, std::string, std::string);
 
     protected:
-        std::vector<svd::TimeElapsed*> times;
-        std::vector<Denoiser*> denoisers;
+        thrust::host_vector<svd::TimeElapsed*> times;
+        thrust::host_vector<Denoiser*> denoisers;
 
     private:
         BatchDenoiser();

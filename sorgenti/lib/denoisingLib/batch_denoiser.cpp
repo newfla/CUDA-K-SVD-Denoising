@@ -2,19 +2,27 @@
 
 using namespace denoising;
 using namespace svd;
+using namespace thrust;
 
 BatchDenoiser::BatchDenoiser(){}
 
+//****************************************
+//  Destructor
+//  Free Denoiser* acquired (HOST/DEVICE) 
+//***************************************
 BatchDenoiser::~BatchDenoiser(){
 
-
-    //Ogni TimeElapsed[1]...[n] viene già de-allocato dai singoli denoiser 
+    //TimeElapsed[1]...[n] are freed by associated denoiser 
     for(Denoiser* denoiser : denoisers)
         delete denoiser;
 
 }
 
-std::vector<svd::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
+//************************************************************************
+//  Obtain time stats
+//  output:  + timers (host_vector<TimeElapsed*>) ms timers foreach image
+//***********************************************************************
+host_vector<svd::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 
     times[0]->init = 0;
     times[0]->init = 0;
@@ -30,9 +38,13 @@ std::vector<svd::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
     return times;
 }
 
-std::vector<signed char> BatchDenoiser::seqBatchDenoising(){
+//***************************************************************************************************************************************************
+//  Denoise each image sequentially
+//  output:  + status (host_vector<signed char>) foreach image: 0 = done, -1 = image loading failed, -2 = denoising failed, -3 = image saving failed
+//**************************************************************************************************************************************************
+host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
 
-    std::vector<signed char> results;
+    host_vector<signed char> results;
 
     for(Denoiser* denoiser : denoisers)
         results.push_back(denoiser->denoising());
@@ -40,6 +52,13 @@ std::vector<signed char> BatchDenoiser::seqBatchDenoising(){
     return results;
 }
 
+//************************************************************************
+//  BatchDenoiser Factory method instantiates an object based on type
+//  input:  + type (DenoiserType) of denoisers that will be used
+//          + inputFolder path from which load images
+//          + outputFolder path where save images    
+//  output: + batchDenoiser (BatchDenoiser*)
+//***********************************************************************
 BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string inputFolder, std::string outputFolder){
     
     DIR *dir;

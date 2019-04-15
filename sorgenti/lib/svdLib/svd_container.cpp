@@ -2,12 +2,22 @@
 
 using namespace svd;
 
+//***************************************************************************
+//  Constructor   
+//  input:  + svdEngine (SvdEngine*) lifetime associated with this container 
+//**************************************************************************
 SvdContainer::SvdContainer(SvdEngine* svdEngine){
+
     this->svdEngine = svdEngine;
     this->timeElapsed = new TimeElapsed();
 }
 
+//****************************************
+//  Destructor
+//  Free resources acquired (HOST/DEVICE) 
+//***************************************
 SvdContainer::~SvdContainer(){
+
     if(timeElapsed!=NULL)
         delete timeElapsed;
         
@@ -15,6 +25,10 @@ SvdContainer::~SvdContainer(){
         delete svdEngine;
 }
 
+//********************************************************
+//  Save the matrix* and measure SvdEngine init overhead   
+//  input:  + matrix (Matrix*) float, collum-major
+//*******************************************************
 void SvdContainer::setMatrix(Matrix* matrix){
 
     auto start = std::chrono::steady_clock::now();
@@ -23,9 +37,13 @@ void SvdContainer::setMatrix(Matrix* matrix){
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 }
 
-std::vector<Matrix*> SvdContainer::getOutputMatrices(){
+//**********************************************************************************
+//  Obtain input matrix SVD decompisition and measure SvdEngine last phase overhead 
+//  output:  + matrices (Matrix*) float, collum-major
+//*********************************************************************************
+thrust::host_vector<Matrix*> SvdContainer::getOutputMatrices(){
 
-    std::vector<Matrix*> output;
+    thrust::host_vector<Matrix*> output;
 
     auto start = std::chrono::steady_clock::now();
     svdEngine->work();
@@ -40,6 +58,11 @@ std::vector<Matrix*> SvdContainer::getOutputMatrices(){
     return output;
 }
 
+//*********************************************
+//  Obtain time stat
+//  output:  + timers (TimeElapsed*) ms timers
+//********************************************
 TimeElapsed* SvdContainer::getTimeElapsed(){
+    
     return timeElapsed;
 }
