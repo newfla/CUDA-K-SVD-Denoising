@@ -11,7 +11,6 @@ namespace denoising{
     class Denoiser;
     class CudaKSvdDenoiser;
     class BatchDenoiser;
-    class PowFunctor;
 
     //Enum section
     enum DenoiserType{CUDA_K_GESVD, CUDA_K_GESVDJ};
@@ -64,7 +63,7 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         CudaKSvdDenoiser();
         void createPatches();
         void initDictionary();
-        
+
     friend Denoiser;
 };
 
