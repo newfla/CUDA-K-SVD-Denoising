@@ -33,7 +33,7 @@ If noisedPathFolder is the same as deNoisedPathFolder original images will be ov
 </aside>
 
 ## Class Diagaram
-![Image of Yaktocat](https://octodex.github.com/images/yaktocat.png)
+![Image of Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/diagrammaSVD.png)
 
 
 ## History
