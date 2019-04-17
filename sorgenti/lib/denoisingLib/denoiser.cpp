@@ -2,6 +2,7 @@
 
 using namespace denoising;
 using namespace svd;
+using namespace utl;
 using namespace cimg_library;
 
 Denoiser::Denoiser(){
@@ -36,7 +37,7 @@ bool Denoiser::loadImage(){
     if(inputImage==NULL)
         return false;
 
-    inputMatrix = new svd::Matrix(inputImage->height(), inputImage->height(), inputImage->width(), inputImage->RGBtoYCbCr().channel(0).data());
+    inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->RGBtoYCbCr().channel(0).data());
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -55,7 +56,7 @@ bool Denoiser::saveImage(){
     //TODO da rimuovere
     outputMatrix = inputMatrix;
 
-    CImg<float> image(outputMatrix->ld, outputMatrix->n);
+    CImg<float> image(outputMatrix->n, outputMatrix->ld);
 
     //TODO in realtà sarebbe deviceVector
     image._data = outputMatrix->hostVector->data();
@@ -104,6 +105,6 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
     return denoiser;
 }
 
-svd::TimeElapsed* Denoiser::getTimeElapsed(){
+utl::TimeElapsed* Denoiser::getTimeElapsed(){
     return timeElapsed;
 }

@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 
 using namespace svd;
+using namespace utl;
 using namespace thrust;
 
 SvdCudaEngine::SvdCudaEngine(){}
@@ -70,7 +71,41 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     cudaFree(deviceS);
     cudaFree(deviceWork);
     cusolverDnDestroy(cusolverH);
-    input->hostVector = NULL;
+    input->deviceVector = NULL;
+
+    cudaDeviceReset();
+
+    return output;
+}
+
+//******************************************************************
+//  Obtain input matrix SVD decompisition and free DEVICE resources 
+//  output:  + matrices (Matrix*) float, collum-major DEVICE
+//*****************************************************************
+thrust::device_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
+
+    Matrix *outputU, *outputVT, *outputS;
+
+    //Wrap raw pointer
+    device_ptr<float> u(deviceU),
+                    vt(deviceVT),
+                    s(deviceS);
+
+    //Allocate memory on host
+    outputU = new Matrix(input->ld, input->m, input->m, new device_vector<float>(u, u + (input->ld * input->m)));
+    outputVT = new Matrix(input->n, input->n, input->n, new device_vector<float>(vt, vt + (input->n * input->n)));
+    outputS = new Matrix (1, input->n, 1, new device_vector<float>(s, s + input->n));
+
+    //Save SVD
+    output.push_back(outputU);
+    output.push_back(outputS);
+    output.push_back(outputVT);
+
+    //Cleaning cuda memory 
+    cudaFree(deviceA);
+    cudaFree(deviceWork);
+    cusolverDnDestroy(cusolverH);
+    input->deviceVector = NULL;
 
     cudaDeviceReset();
 

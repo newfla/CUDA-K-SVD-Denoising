@@ -5,6 +5,7 @@
 
 using namespace denoising;
 using namespace svd;
+using namespace utl;
 using namespace cimg_library;
 
 void testCuSolverSVD(int m, int n, int tot){
@@ -55,8 +56,8 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testReadWriteImage(){
-    // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Tesi/img/input", "/home/flavio/Progetti/Tesi/img/output");
-    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input", "/home/fbizzarri/prova/img/output");
+     BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Tesi/img/input", "/home/flavio/Progetti/Tesi/img/output");
+   // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input", "/home/fbizzarri/prova/img/output");
     batchDenoiser->seqBatchDenoising();
     delete batchDenoiser;
 }
@@ -81,6 +82,8 @@ int main(int argc, char *argv[]) {
     testCuSolverSVD(8192,4096,5);
 
     */
+
+   testReadWriteImage();
    
     return 0;
 }

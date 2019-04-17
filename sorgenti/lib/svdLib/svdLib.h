@@ -1,18 +1,17 @@
 #if !defined(SVD_H)
+
 #include <cstdint>
 #include <random>
-#include <vector>
 #include <chrono>
 #include <iostream>
 #include <cusolverDn.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <utilityLib.h>
 
 namespace svd{
 
     //Class section
-    class Matrix;
-    class TimeElapsed;
     class SvdEngine;
     class SvdContainer;
     class SvdCudaEngine;
@@ -23,45 +22,17 @@ namespace svd{
     enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ};
 };
 
-class svd::Matrix{
-
-    public:
-        int m, n, ld;
-        thrust::host_vector<float> *hostVector = NULL;
-        thrust::device_vector<float> *deviceVector = NULL;
-
-        Matrix(int, int, int, float*);
-        Matrix(int, int, int, thrust::host_vector<float>*);
-        Matrix(int, int, int, thrust::device_vector<float>*);
-        ~Matrix();
-        Matrix* cloneHost();
-        void copyOnDevice();
-        void copyOnHost();
-        static Matrix* randomMatrixHost(int, int, int);
-    
-    private:
-        Matrix();
-};
-
-class svd::TimeElapsed{
-
-    public:
-        int64_t init, working, finalize;
-
-        int64_t getTotalTime();
-};
-
 class svd::SvdContainer{
 
     public:
         SvdContainer(SvdEngine*);
         ~SvdContainer();
-        void setMatrix(Matrix*);
-        thrust::host_vector<Matrix*> getOutputMatrices();
-        TimeElapsed* getTimeElapsed();
+        void setMatrix(utl::Matrix*);
+        thrust::host_vector<utl::Matrix*> getOutputMatrices();
+        utl::TimeElapsed* getTimeElapsed();
 
     private:
-        TimeElapsed* timeElapsed = NULL;
+        utl::TimeElapsed* timeElapsed = NULL;
         SvdEngine* svdEngine = NULL;
 };
 
@@ -72,12 +43,13 @@ class svd::SvdEngine{
         static SvdEngine* factory(SvdEngineType type);
 
     protected:
-        Matrix *input = NULL;
-        thrust::host_vector<Matrix*> output;
+        utl::Matrix *input = NULL;
+        thrust::host_vector<utl::Matrix*> output;
         
-        virtual void init(Matrix*) ;
+        virtual void init(utl::Matrix*) ;
         virtual void work() = 0;
-        virtual thrust::host_vector<Matrix*> getOutputMatrices() = 0;
+        virtual thrust::host_vector<utl::Matrix*> getOutputMatrices() = 0;
+        virtual thrust::device_vector<utl::Matrix*> getDeviceOutputMatrices() = 0;
         SvdEngine();
 
         friend SvdContainer;
@@ -91,8 +63,9 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
         cusolverDnHandle_t cusolverH;
 
         SvdCudaEngine();
-        virtual void init(Matrix*);
-        virtual thrust::host_vector<Matrix*> getOutputMatrices();
+        virtual void init(utl::Matrix*);
+        virtual thrust::host_vector<utl::Matrix*> getOutputMatrices();
+        thrust::device_vector<utl::Matrix*> getDeviceOutputMatrices();
 
 };
 
@@ -100,9 +73,10 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
 
     protected:
         CuSolverGeSvd();
-        void init(Matrix*);
+        void init(utl::Matrix*);
         void work();
-        thrust::host_vector<Matrix*> getOutputMatrices();
+        thrust::host_vector<utl::Matrix*> getOutputMatrices();
+        thrust::device_vector<utl::Matrix*> getDeviceOutputMatrices();
 
     private:
         float* deviceRWork = NULL;
@@ -114,9 +88,10 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
 
     protected:
         CuSolverGeSvdJ();
-        void init(Matrix*);
+        void init(utl::Matrix*);
         void work();
-        thrust::host_vector<Matrix*> getOutputMatrices();
+        thrust::host_vector<utl::Matrix*> getOutputMatrices();
+        thrust::device_vector<utl::Matrix*> getDeviceOutputMatrices();
 
     private:
         float tolerance;

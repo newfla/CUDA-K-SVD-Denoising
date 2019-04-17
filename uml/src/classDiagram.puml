@@ -1,24 +1,73 @@
 @startuml diagrammaSVD
 
-package svdLib {
+package utilityLib{
+
     class Matrix{
         + int m
         + int n
         + int ld
         + host_vector* hostVector
         + device_vector* deviceVector
+        
         + Matrix* cloneHost()
         + void copyOnDevice()
         + void copyOnHost()
         {static} + Matrix* randomMatrixHost(int m, int n, int ld)
     }
 
+    class TimeElapsed{
+        + int init
+        + int working
+        + int finalize
+        + int getTotalTime()
+    }
+
+    note right: Time in milliseconds
+
+    enum MatrixMultType{
+            CUBLASS_MULT
+    }
+
+    abstract class MatrixMult{
+
+        # float alfa
+        # float BoundaryStereotypeFontName
+
+        {abstract} # init()
+        {abstract} # finalize()
+        {abstract} + multiply()
+        {abstract} + TimeElapsed* getTimeElapsed()
+        {static} + MatrixMult* factory(MatrixMultType, Matrix*, Matrix* ,int , int)
+    }
+
+    class CuBlassMatrixMult{
+
+        - cublasHandle_t handle
+        - cublasOperation_t op
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + multiply()
+    }
+
+    MatrixMult --> "*" Matrix
+    MatrixMult --> "1" TimeElapsed
+    MatrixMult -> "1" MatrixMultType 
+    CuBlassMatrixMult --|> MatrixMult : extends
+
+    hide MatrixMultType methods 
+}
+
+package svdLib {
+
     abstract class SvdEngine{
         
         {abstract} # init(Matrix*)
         {abstract} # host_vector<Matrix*> getOutputMatrices()
+        {abstract} # device_vector<Matrix*> getDeviceOutputMatrices()
         {abstract} # work( )
-        {static} + SvdEngine factory(SvdEngineType)
+        {static} + SvdEngine* factory(SvdEngineType)
     }
 
     abstract class SvdCudaEngine{
@@ -28,13 +77,14 @@ package svdLib {
         # float* deviceS
         # float* deviceVT
         # float* deviceWork
-        # int lWork;
-        # int* deviceInfo;
+        # int lWork
+        # int* deviceInfo
         # cusolverDnHandle_t cusolverH
         
 
         #  init(Matrix*)
         #  host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
     }
 
     enum SvdEngineType{
@@ -44,11 +94,12 @@ package svdLib {
 
     class CuSolverGeSvd{
 
-        - float* deviceRWork;
+        - float* deviceRWork
 
         # init(Matrix*)
         # work( )
-        # host_vector<Matrix*> getOutputMatrices();
+        # host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
     }
 
     class CuSolverGeSvdJ{
@@ -63,17 +114,8 @@ package svdLib {
         # init(Matrix*)
         # work( )
         # host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
     }
-
-
-    class TimeElapsed{
-        + int init
-        + int working
-        + int finalize
-        + int getTotalTime()
-    }
-
-    note bottom: Time in milliseconds
 
     class SvdContainer{
 
@@ -83,10 +125,10 @@ package svdLib {
         + TimeElapsed* getTimeElapsed()
     }
 
-    SvdContainer -->  "*" Matrix 
+    'SvdContainer -->  "*" Matrix 
     SvdContainer --> "1" SvdEngine
-    TimeElapsed "1" <- SvdContainer
-    SvdEngine -> "*" Matrix
+    'TimeElapsed "1" <- SvdContainer
+    'SvdEngine -> "*" Matrix
     SvdEngine -> "1" SvdEngineType
     SvdEngine <|-- SvdCudaEngine : extends
     SvdCudaEngine <|-- CuSolverGeSvdJ : extends
@@ -115,7 +157,7 @@ package denoisingLib{
         {abstract} # bool internalDenoising()
         {abstract} + signed char denoising()
         + TimeElapsed* getTimeElapsed()
-        {static} + Denoiser factory (DenoiserType, String input, String output)
+        {static} + Denoiser* factory (DenoiserType, String input, String output)
     }
 
     note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
@@ -142,14 +184,14 @@ package denoisingLib{
     note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 
 
 
-    Denoiser --> "1" TimeElapsed
-    Denoiser --> "*" Matrix
-    Denoiser --> "*" SvdContainer
+    'Denoiser --> "1" TimeElapsed
+    'Denoiser --> "*" Matrix
+    'Denoiser --> "*" SvdContainer
     CudaKSvdDenoiser -|> Denoiser : extends
-    DenoiserType "1"<-- CudaKSvdDenoiser
-    CudaKSvdDenoiser --> "*" Matrix
+    DenoiserType "1"<- CudaKSvdDenoiser
+    'CudaKSvdDenoiser --> "*" Matrix
     BatchDenoiser --> "*" Denoiser
-    BatchDenoiser --> "*" TimeElapsed
+    'BatchDenoiser --> "*" TimeElapsed
 
     hide BatchDenoiser fields
     hide DenoiserType methods

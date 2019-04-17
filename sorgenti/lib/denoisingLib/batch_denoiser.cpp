@@ -2,6 +2,7 @@
 
 using namespace denoising;
 using namespace svd;
+using namespace utl;
 using namespace thrust;
 
 BatchDenoiser::BatchDenoiser(){}
@@ -22,7 +23,7 @@ BatchDenoiser::~BatchDenoiser(){
 //  Obtain time stats
 //  output:  + timers (host_vector<TimeElapsed*>) ms timers foreach image
 //***********************************************************************
-host_vector<svd::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
+host_vector<utl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 
     times[0]->init = 0;
     times[0]->init = 0;
@@ -45,7 +46,7 @@ host_vector<svd::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
 
     host_vector<signed char> results;
-
+    
     for(Denoiser* denoiser : denoisers)
         results.push_back(denoiser->denoising());
 

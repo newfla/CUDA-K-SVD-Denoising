@@ -3,13 +3,14 @@
 #include <cuda_runtime.h>
 
 using namespace svd;
+using namespace utl;
 
 CuSolverGeSvdJ::CuSolverGeSvdJ(){}
 
-//*******************************************************************************************************
-//  Save the vector on which SVD will be executed, create cuSolver additional data and move data on HOST
+//*********************************************************************************************************
+//  Save the vector on which SVD will be executed, create cuSolver additional data and move data on DEVICE
 //  input:  + matrix (Matrix*) float, collum-major
-//******************************************************************************************************
+//********************************************************************************************************
 void CuSolverGeSvdJ::init(Matrix* matrix){
 
     //Call parent method
@@ -77,6 +78,17 @@ thrust::host_vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){
     cudaFree(deviceInfo);
     cusolverDnDestroyGesvdjInfo(gesvdjParams);
     return SvdCudaEngine::getOutputMatrices(); 
+}
+
+//******************************************************************
+//  Obtain input matrix SVD decompisition and free DEVICE resources 
+//  output:  + matrices (Matrix*) float, collum-major DEViCE
+//*****************************************************************
+thrust::device_vector<utl::Matrix*> CuSolverGeSvdJ::getDeviceOutputMatrices(){
+
+    cudaFree(deviceInfo);
+    cusolverDnDestroyGesvdjInfo(gesvdjParams);
+    return SvdCudaEngine::getDeviceOutputMatrices(); 
 }
 
 //******************************************************************

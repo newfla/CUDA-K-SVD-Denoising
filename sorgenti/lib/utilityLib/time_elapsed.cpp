@@ -1,6 +1,6 @@
 #include <svdLib.h>
 
-using namespace svd;
+using namespace utl;
 
 //*************************************************
 //  Compute total runTime = init + work + finalize 

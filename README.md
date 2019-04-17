@@ -8,8 +8,8 @@ __90% of K-SVD computation runs on GPU__
 
 ## Dependencies
  
- - Cmake 3.0
- - CUDA >=9.1
+ - Cmake >= 3.0
+ - CUDA >= 9.1
  - CImg
  - ImageMagick
  
@@ -33,12 +33,13 @@ If noisedPathFolder is the same as deNoisedPathFolder original images will be ov
 </aside>
 
 ## Class Diagaram
+Relationships between classes of different packages are hidden
+
 ![Image of Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/diagrammaSVD.png)
 
 
 ## History
  - Version 0.1 : Private Alpha
- - Version 1.0 : First Public Release  
 
 ## Credits
 - Based on [trungmanhhuynh](https://github.com/trungmanhhuynh/kSVD-Image-Denoising) CPU version 

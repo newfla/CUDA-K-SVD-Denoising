@@ -1,4 +1,5 @@
 #if !defined(DENOISING_H)
+
 #include <string>
 #include <algorithm>
 #include <dirent.h>
@@ -22,20 +23,22 @@ class denoising::Denoiser{
         virtual ~Denoiser();
         static Denoiser* factory(DenoiserType, std::string, std::string);
         virtual signed char denoising() = 0;
-        svd::TimeElapsed* getTimeElapsed();
+        utl::TimeElapsed* getTimeElapsed();
 
     protected:
-        svd::Matrix *inputMatrix = NULL, *outputMatrix = NULL;
-
+        utl::Matrix* inputMatrix = NULL;
+        utl::Matrix* outputMatrix = NULL;
+        utl::TimeElapsed* timeElapsed = NULL;
+        
+        Denoiser();
         virtual bool loadImage();
         virtual bool saveImage();
         virtual bool internalDenoising() = 0;
-        Denoiser();
 
     private:
         std::string inputFile, outputFile;
-        svd::TimeElapsed* timeElapsed = NULL;
         cimg_library::CImg<float> *inputImage = NULL;
+
 
     friend BatchDenoiser;
 
@@ -53,16 +56,20 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         bool internalDenoising();
 
     private:
-        int patchSquareDim = 8;
-        int slidingPatch = 2;
+        int patchSquareDim = 64;
+        int slidingPatch = 10;
         int atoms = 256;
+        int iter = 10;
         DenoiserType type;
-        svd::Matrix* noisePatches = NULL;
-        svd::Matrix* dictionary = NULL;
+        utl::Matrix* noisePatches = NULL;
+        utl::Matrix* dictionary = NULL;
+        utl::Matrix* sparseCode = NULL;
 
         CudaKSvdDenoiser();
         void createPatches();
         void initDictionary();
+        void updateDictionary();
+        void kSvd();
 
     friend Denoiser;
 };
@@ -71,12 +78,13 @@ class denoising::BatchDenoiser{
 
     public:
         ~BatchDenoiser();
-        thrust::host_vector<svd::TimeElapsed*> getTimeElapsed();
+        thrust::host_vector<utl::TimeElapsed*> getTimeElapsed();
         thrust::host_vector<signed char> seqBatchDenoising();
         static BatchDenoiser* factory(DenoiserType, std::string, std::string);
 
+
     protected:
-        thrust::host_vector<svd::TimeElapsed*> times;
+        thrust::host_vector<utl::TimeElapsed*> times;
         thrust::host_vector<Denoiser*> denoisers;
 
     private:
