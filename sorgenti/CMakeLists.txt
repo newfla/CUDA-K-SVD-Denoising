@@ -15,7 +15,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     set(CUDA_64_BIT_DEVICE_CODE ON)
    
-    cuda_add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_mult.cpp lib/utilityLib/cublas_matrix_mult.cu)
+    cuda_add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_ops.cpp lib/utilityLib/cublas_matrix_mult.cu lib/utilityLib/cublas_matrix_add.cu)
 
     cuda_add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 
@@ -23,7 +23,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     cuda_add_executable(denoising main.cpp)
 
-    target_link_libraries(denoising utilityLib vdLib denoisingLib denoisingLib ${CUDA_cusolver_LIBRARY} ${CUDA_cublas_LIBRARY} X11) 
+    target_link_libraries(denoising denoisingLib svdLib utilityLib ${CUDA_cusolver_LIBRARY} ${CUDA_cublas_LIBRARY} X11) 
 
 ELSE()
 
@@ -36,7 +36,7 @@ ELSE()
 
     project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
 
-    add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_mult.cpp lib/utilityLib/cublas_matrix_mult.cu)
+    add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_ops.cpp lib/utilityLib/cublas_matrix_mult.cu lib/utilityLib/cublas_matrix_add.cu)
 
     add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 
@@ -44,6 +44,6 @@ ELSE()
 
     add_executable(denoising main.cpp)
 
-    target_link_libraries(denoising utilityLib svdLib denoisingLib cusolver cublas X11)
+    target_link_libraries(denoising denoisingLib svdLib utilityLib cusolver cublas X11)
 
 ENDIF()

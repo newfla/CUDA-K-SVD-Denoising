@@ -48,6 +48,7 @@ host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
     host_vector<signed char> results;
     
     for(Denoiser* denoiser : denoisers)
+    
         results.push_back(denoiser->denoising());
 
     return results;

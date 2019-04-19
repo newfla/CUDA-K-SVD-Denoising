@@ -1,7 +1,5 @@
 #if !defined(SVD_H)
 
-#include <cstdint>
-#include <random>
 #include <chrono>
 #include <iostream>
 #include <cusolverDn.h>
@@ -29,6 +27,7 @@ class svd::SvdContainer{
         ~SvdContainer();
         void setMatrix(utl::Matrix*);
         thrust::host_vector<utl::Matrix*> getOutputMatrices();
+        thrust::device_vector<utl::Matrix*> getDeviceOutputMatrices();
         utl::TimeElapsed* getTimeElapsed();
 
     private:

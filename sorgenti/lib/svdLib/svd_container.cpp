@@ -40,7 +40,7 @@ void SvdContainer::setMatrix(Matrix* matrix){
 
 //**********************************************************************************
 //  Obtain input matrix SVD decompisition and measure SvdEngine last phase overhead 
-//  output:  + matrices (Matrix*) float, collum-major
+//  output:  + matrices (Matrix*) float, collum-major HOST
 //*********************************************************************************
 thrust::host_vector<Matrix*> SvdContainer::getOutputMatrices(){
 
@@ -53,6 +53,27 @@ thrust::host_vector<Matrix*> SvdContainer::getOutputMatrices(){
 
     start = std::chrono::steady_clock::now();
     output = svdEngine->getOutputMatrices();
+    end = std::chrono::steady_clock::now();
+    timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    return output;
+}
+
+//**********************************************************************************
+//  Obtain input matrix SVD decompisition and measure SvdEngine last phase overhead 
+//  output:  + matrices (Matrix*) float, collum-major DEVICE
+//*********************************************************************************
+thrust::device_vector<Matrix*> SvdContainer::getDeviceOutputMatrices(){
+
+    thrust::host_vector<Matrix*> output;
+
+    auto start = std::chrono::steady_clock::now();
+    svdEngine->work();
+    auto end = std::chrono::steady_clock::now();
+    timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    start = std::chrono::steady_clock::now();
+    output = svdEngine->getDeviceOutputMatrices();
     end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 

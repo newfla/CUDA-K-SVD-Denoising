@@ -1,5 +1,8 @@
 #if !defined(UTILITY_H)
 
+#include <chrono>
+#include <cstdint>
+#include <random>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <cublas_v2.h>
@@ -9,11 +12,12 @@ namespace utl{
     //Class section
     class Matrix;
     class TimeElapsed;
-    class MatrixMult;
-    class CuBlassMatrixMult;
+    class MatrixOps;
+    class CuBlasMatrixMult;
+    class CuBlasMatrixAdd;
 
     //Enum section
-    enum MatrixMultType{CUBLASS_MULT};
+    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD};
 };
 
 class utl::Matrix{
@@ -45,13 +49,14 @@ class utl::TimeElapsed{
         int64_t getTotalTime();
 };
 
-class utl::MatrixMult{
+class utl::MatrixOps{
 
     public:
-        virtual utl::Matrix* multiply() = 0;
-        virtual ~MatrixMult();
+        virtual utl::Matrix* work(Matrix* a, Matrix* b) = 0;
+        virtual ~MatrixOps();
         utl::TimeElapsed* getTimeElapsed();
-        static MatrixMult* factory(MatrixMultType, utl::Matrix*, utl::Matrix* ,int , int);
+        void setCoeff(float, float);
+        static MatrixOps* factory(MatrixOpsType);
 
     protected:
         utl::Matrix* a;
@@ -61,28 +66,49 @@ class utl::MatrixMult{
         float alfa = 1;
         float beta = 0;
         
-        MatrixMult();
+        MatrixOps();
         virtual void init() = 0;
         virtual void finalize() = 0;
 
 };
 
-class utl::CuBlassMatrixMult : public utl::MatrixMult{
+class utl::CuBlasMatrixMult : public utl::MatrixOps{
 
     public:
-        utl::Matrix* multiply();
+        utl::Matrix* work(Matrix* a, Matrix* b);
+        void setOps(cublasOperation_t, cublasOperation_t);
         
     protected:
-        CuBlassMatrixMult();
+        CuBlasMatrixMult();
         void init();
         void finalize();
 
     private:
         cublasHandle_t handle;
-        cublasOperation_t op = CUBLAS_OP_N;
+        cublasOperation_t op1, op2;
         thrust::device_vector<float>* cVector; 
     
-    friend MatrixMult;
+    friend MatrixOps;
+
+};
+
+class utl::CuBlasMatrixAdd : public utl::MatrixOps{
+
+    public:
+        utl::Matrix* work(Matrix* a, Matrix* b);
+        void setOps(cublasOperation_t, cublasOperation_t);
+        
+    protected:
+        CuBlasMatrixAdd();
+        void init();
+        void finalize();
+
+    private:
+        cublasHandle_t handle;
+        cublasOperation_t op1, op2;
+        thrust::device_vector<float>* cVector; 
+    
+    friend MatrixOps;
 
 };
 

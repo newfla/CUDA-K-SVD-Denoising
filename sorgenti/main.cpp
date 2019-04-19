@@ -1,11 +1,9 @@
-#include <iostream>
-#include<string>
 #include <denoisingLib.h>
-#include<CImg.h>
 
 using namespace denoising;
 using namespace svd;
 using namespace utl;
+using namespace thrust;
 using namespace cimg_library;
 
 void testCuSolverSVD(int m, int n, int tot){
@@ -55,10 +53,44 @@ void testCuSolverSVD(int m, int n, int tot){
     }
 }
 
-void testReadWriteImage(){
+void testBatchDenoiser(){
      BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Tesi/img/input", "/home/flavio/Progetti/Tesi/img/output");
    // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input", "/home/fbizzarri/prova/img/output");
     batchDenoiser->seqBatchDenoising();
+
+    host_vector<utl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
+
+    double init = times[0]->init, work = times[0]->working, fin = times[0]->finalize, tot = times[0]->getTotalTime();
+
+    init/=1000.;
+    work/=1000.;
+    fin/=1000.;
+    tot/=1000.;
+
+    std::cout<<"# Total execution time: "<<tot<<" s"<<std::endl;
+    std::cout<<"    Total init time: "<<init<<" s"<<std::endl;
+    std::cout<<"    Total working time: "<<work<<" s"<<std::endl;
+    std::cout<<"    Total finalize time: "<<fin<<" s"<<std::endl;
+
+    for(int i = 1; i < times.size(); i++)
+    {
+        init = times[i]->init;
+        work = times[i]->working;
+        fin = times[i]->finalize;
+        tot = times[i]->getTotalTime();
+
+        work/=1000.;
+        tot/=1000.;
+
+        std::cout<<"## Image: "<<i<<"execution time: "<<tot<<" s"<<std::endl;
+        std::cout<<"    init time: "<<init<<" ms"<<std::endl;
+        std::cout<<"    working time: "<<work<<" s"<<std::endl;
+        std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;
+        
+    }
+    
+
+
     delete batchDenoiser;
 }
 
@@ -83,7 +115,7 @@ int main(int argc, char *argv[]) {
 
     */
 
-   testReadWriteImage();
+   testBatchDenoiser();
    
     return 0;
 }

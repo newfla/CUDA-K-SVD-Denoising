@@ -10,8 +10,8 @@ package utilityLib{
         + device_vector* deviceVector
         
         + Matrix* cloneHost()
-        + void copyOnDevice()
-        + void copyOnHost()
+        + copyOnDevice()
+        + copyOnHost()
         {static} + Matrix* randomMatrixHost(int m, int n, int ld)
     }
 
@@ -25,36 +25,52 @@ package utilityLib{
     note right: Time in milliseconds
 
     enum MatrixMultType{
-            CUBLASS_MULT
+            CUBLAS_MULT
+            CUBLAS_ADD
     }
 
-    abstract class MatrixMult{
+    abstract class MatrixOps{
 
         # float alfa
-        # float BoundaryStereotypeFontName
+        # float beta
 
         {abstract} # init()
         {abstract} # finalize()
-        {abstract} + multiply()
+        + setCoff(int alfa, int beta)
+        {abstract} + work()
         {abstract} + TimeElapsed* getTimeElapsed()
         {static} + MatrixMult* factory(MatrixMultType, Matrix*, Matrix* ,int , int)
     }
 
-    class CuBlassMatrixMult{
+    class CuBlasMatrixMult{
 
         - cublasHandle_t handle
-        - cublasOperation_t op
+        - cublasOperation_t op1
+        - cublasOperation_t op2
         - device_vector<float>* cVector
 
         # init()
         # finalize()
-        + multiply()
+        + work()
+        + setOps(cublasOperation_t, cublasOperation_t) 
     }
 
-    MatrixMult --> "*" Matrix
-    MatrixMult --> "1" TimeElapsed
-    MatrixMult -> "1" MatrixMultType 
-    CuBlassMatrixMult --|> MatrixMult : extends
+    class CuBlasMatrixAdd{
+
+        - cublasHandle_t handle
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + work()
+        + setOps(cublasOperation_t op1, cublasOperation_t op2)
+    }
+
+    MatrixOps --> "*" Matrix
+    MatrixOps --> "1" TimeElapsed
+    MatrixOps -> "1" MatrixMultType 
+    CuBlasMatrixMult --|> MatrixOps : extends
+    CuBlasMatrixAdd --|> MatrixOps : extends
 
     hide MatrixMultType methods 
 }
@@ -82,8 +98,8 @@ package svdLib {
         # cusolverDnHandle_t cusolverH
         
 
-        #  init(Matrix*)
-        #  host_vector<Matrix*> getOutputMatrices()
+        # init(Matrix*)
+        # host_vector<Matrix*> getOutputMatrices()
         # device_vector<Matrix*> getDeviceOutputMatrices()
     }
 
@@ -122,6 +138,7 @@ package svdLib {
         + SvdContainer(SvdEngine*)
         + setMatrix(Matrix*)
         + host_vector<Matrix*> getOutputMatrices()
+        + device_vector<Matrix*> getDeviceOutputMatrices()
         + TimeElapsed* getTimeElapsed()
     }
 
@@ -167,8 +184,8 @@ package denoisingLib{
         - int slidingPatch
         - int atoms
 
-        - void createPatch()
-        - void initDictionary()
+        - createPatch()
+        - initDictionary()
         # bool loadImage()
         # bool saveImage()
         # bool internalDenoising()

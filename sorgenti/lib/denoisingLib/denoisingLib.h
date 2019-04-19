@@ -56,15 +56,16 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         bool internalDenoising();
 
     private:
-        int patchSquareDim = 64;
-        int slidingPatch = 10;
+        int patchSquareDim = 8;
+        int slidingPatch = 2;
         int atoms = 256;
         int iter = 10;
         DenoiserType type;
         utl::Matrix* noisePatches = NULL;
         utl::Matrix* dictionary = NULL;
         utl::Matrix* sparseCode = NULL;
-
+        svd::SvdContainer* svdContainer = NULL;
+        
         CudaKSvdDenoiser();
         void createPatches();
         void initDictionary();
