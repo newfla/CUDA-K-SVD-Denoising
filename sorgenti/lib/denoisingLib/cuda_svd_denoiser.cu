@@ -166,7 +166,6 @@ void CudaKSvdDenoiser::initDictionary(){
     std::cout<<"    # Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;
 }
 
-
 //******************************************************
 //  Update dictionary columns using SVD on Error Matrix
 //*****************************************************
@@ -253,7 +252,7 @@ void CudaKSvdDenoiser::updateDictionary(){
 //*************
 void CudaKSvdDenoiser::kSvd(){
 
-    sparseCode = new Matrix(atoms, noisePatches->n, atoms, new device_vector<float>(atoms * noisePatches->n));
+    //sparseCode = new Matrix(atoms, noisePatches->n, atoms, new device_vector<float>(atoms * noisePatches->n));
 
     for(int i = 0 ; i < iter ; i++){
 
@@ -261,7 +260,11 @@ void CudaKSvdDenoiser::kSvd(){
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
-        //omp
+
+        CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
+        omp->setLimits(FLT_EPSILON, 5);
+        sparseCode = omp->work(noisePatches, dictionary);
+
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
         std::cout<<"    OMP Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;
@@ -272,6 +275,8 @@ void CudaKSvdDenoiser::kSvd(){
         end = std::chrono::steady_clock::now();
         auto tot2 = end - start;
         std::cout<<"    Dict update Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot2).count()<<" ms"<<std::endl;
+
+        delete sparseCode;
         
         std::cout<<"    Total time: "<<tot1.count() + tot2.count()<<std::endl<<std::endl; 
     } 

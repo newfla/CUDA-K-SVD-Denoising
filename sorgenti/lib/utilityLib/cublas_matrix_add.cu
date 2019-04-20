@@ -65,7 +65,19 @@ utl::Matrix* CuBlasMatrixAdd::work(Matrix* a, Matrix* b){
     float* pointerB = raw_pointer_cast(b->deviceVector->data());
     float* pointerC = raw_pointer_cast(cVector->data());
 
-    cublasSgeam(handle, op1, op2, a->m, b->n, &alfa, pointerA, a->ld, &beta, pointerB, b->ld, pointerC, b->ld);
+    cublasSgeam(handle, 
+                op1,
+                op2,
+                a->m,
+                b->n,
+                &alfa,
+                pointerA,
+                a->ld,
+                &beta,
+                pointerB,
+                b->ld,
+                pointerC,
+                b->ld);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();

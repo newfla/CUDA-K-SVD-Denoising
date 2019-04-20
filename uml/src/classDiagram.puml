@@ -27,6 +27,7 @@ package utilityLib{
     enum MatrixMultType{
             CUBLAS_MULT
             CUBLAS_ADD
+            CUBLAS_OMP
     }
 
     abstract class MatrixOps{
@@ -36,9 +37,9 @@ package utilityLib{
 
         {abstract} # init()
         {abstract} # finalize()
-        + setCoff(int alfa, int beta)
-        {abstract} + work()
+        {abstract} + work(Matrix* a , Matrix* b)
         {abstract} + TimeElapsed* getTimeElapsed()
+        + setCoff(int alfa, int beta)
         {static} + MatrixMult* factory(MatrixMultType, Matrix*, Matrix* ,int , int)
     }
 
@@ -51,19 +52,33 @@ package utilityLib{
 
         # init()
         # finalize()
-        + work()
+        + work(Matrix* a , Matrix* b)
         + setOps(cublasOperation_t, cublasOperation_t) 
     }
 
     class CuBlasMatrixAdd{
 
         - cublasHandle_t handle
+        - cublasOperation_t op1
+        - cublasOperation_t op2
         - device_vector<float>* cVector
 
         # init()
         # finalize()
-        + work()
+        + work(Matrix* a , Matrix* b)
         + setOps(cublasOperation_t op1, cublasOperation_t op2)
+    }
+
+    class CuBlasMatrixOmp{
+        - int maxIters
+        - float epsilon
+        - cublasHandle_t handle
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + work(Matrix* a , Matrix* b)
+        + setLimits(float epsilon, int maxIters)
     }
 
     MatrixOps --> "*" Matrix
@@ -71,6 +86,7 @@ package utilityLib{
     MatrixOps -> "1" MatrixMultType 
     CuBlasMatrixMult --|> MatrixOps : extends
     CuBlasMatrixAdd --|> MatrixOps : extends
+    CuBlasMatrixOmp --|> MatrixOps : extends
 
     hide MatrixMultType methods 
 }

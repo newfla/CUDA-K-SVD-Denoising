@@ -6,6 +6,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <cublas_v2.h>
+#include <float.h>
 
 namespace utl{
 
@@ -15,9 +16,10 @@ namespace utl{
     class MatrixOps;
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
+    class CuBlasMatrixOmp;
 
     //Enum section
-    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD};
+    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP};
 };
 
 class utl::Matrix{
@@ -110,6 +112,26 @@ class utl::CuBlasMatrixAdd : public utl::MatrixOps{
     
     friend MatrixOps;
 
+};
+
+class utl::CuBlasMatrixOmp : public utl::MatrixOps{
+
+    public:
+        utl::Matrix* work(Matrix* a, Matrix* b);
+        void setLimits(float, int);
+
+    protected:
+        CuBlasMatrixOmp();
+        void init();
+        void finalize();
+
+    private:
+        cublasHandle_t handle;
+        thrust::device_vector<float>* sparseCode;
+        int maxIters = 5;
+        float epsilon = FLT_EPSILON;
+
+    friend MatrixOps;
 };
 
 #endif

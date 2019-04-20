@@ -36,7 +36,7 @@ ELSE()
 
     project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
 
-    add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_ops.cpp lib/utilityLib/cublas_matrix_mult.cu lib/utilityLib/cublas_matrix_add.cu)
+    add_library(utilityLib lib/utilityLib/utilityLib.h lib/utilityLib/matrix.cpp lib/utilityLib/time_elapsed.cpp lib/utilityLib/matrix_ops.cpp lib/utilityLib/cublas_matrix_mult.cu lib/utilityLib/cublas_matrix_add.cu lib/utilityLib/cublas_matrix_omp.cu)
 
     add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 

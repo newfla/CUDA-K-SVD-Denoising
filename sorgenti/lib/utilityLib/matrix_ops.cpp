@@ -41,6 +41,10 @@ MatrixOps* MatrixOps::factory(MatrixOpsType type){
         case CUBLAS_ADD:
             mult = new CuBlasMatrixAdd();
             break;
+
+        case CUBLAS_OMP:
+            mult = new CuBlasMatrixOmp();
+            break;
     
         default:
             return NULL;
