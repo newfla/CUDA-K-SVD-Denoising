@@ -32,7 +32,7 @@ cd sorgenti/build
 If noisedPathFolder is the same as deNoisedPathFolder original images will be overwritten
 </aside>
 
-## Class Diagaram
+## Class Diagram
 Relationships between classes of different packages are hidden
 
 ![Image of Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/diagrammaSVD.png)
