@@ -86,6 +86,9 @@ bool CudaKSvdDenoiser::internalDenoising(){
     //Start #iter K-SVD
     kSvd();
 
+    //Rebuild originalImage
+    createImage();
+
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
@@ -279,6 +282,81 @@ void CudaKSvdDenoiser::kSvd(){
         delete sparseCode;
         
         std::cout<<"    Total time: "<<tot1.count() + tot2.count()<<std::endl<<std::endl; 
-    } 
+    }
+
+    //Compute last Iter sparseCode
+    delete sparseCode;
+
+    auto start = std::chrono::steady_clock::now();
+
+    CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
+    omp->setLimits(FLT_EPSILON, 5);
+    sparseCode = omp->work(noisePatches, dictionary);
+
+    auto end = std::chrono::steady_clock::now();
+    auto tot1 = end - start;
+    std::cout<<"Last iter OMP Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;        
 }
 
+void CudaKSvdDenoiser::createImage(){
+
+    //Build deNoised Patches
+    delete noisePatches;
+    
+    auto start = std::chrono::steady_clock::now();
+
+    std::cout<<"Matrix mult between Dict and sparseCode";
+
+    CuBlasMatrixMult* mult= (CuBlasMatrixMult*) MatrixOps::factory(CUBLAS_MULT);
+    mult->setOps(CUBLAS_OP_N, CUBLAS_OP_N);
+    noisePatches = mult->work(dictionary, sparseCode);
+
+    auto end = std::chrono::steady_clock::now();
+    auto tot1 = end - start;
+    std::cout<<"    Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;
+
+
+    //Build DenoisedImage
+    start = std::chrono::steady_clock::now();
+
+    std::cout<<"Build image denoised";
+
+    device_vector<float>* img = new device_vector<float>(inputMatrix->m * inputMatrix->n);
+    device_vector<float> blockWeight(patchSquareDim*patchSquareDim,1);
+    device_vector<float> imgWeight(inputMatrix->m * inputMatrix->n);
+
+    int dim = patchSquareDim * patchSquareDim;
+    int patchIdx = 0 ;
+    for(int i = 0; i + patchSquareDim <= inputMatrix->n; i = i + slidingPatch){
+        
+        for(int j = 0; j + patchSquareDim <= inputMatrix->m; j = j + slidingPatch){
+
+            int startPatchIdx = i*inputMatrix->m + j ;
+            int colIdx = 0;
+
+            device_vector<float> thisPatch(noisePatches->deviceVector->begin() + patchIdx*dim, noisePatches->deviceVector->begin() + (patchIdx + 1)*dim); 
+
+            for(int k = startPatchIdx; k < startPatchIdx + patchSquareDim*inputMatrix->m; k += inputMatrix->m){
+
+                std::transform(thisPatch.begin() + colIdx*patchSquareDim, thisPatch.begin() + (colIdx +1)*patchSquareDim,
+                           img->begin() + k, img->begin() + k, std::plus<float>());
+                
+                std::transform(blockWeight.begin() + colIdx*patchSquareDim ,blockWeight.begin() + (colIdx + 1)*patchSquareDim,
+                           imgWeight.begin() + k , imgWeight.begin() + k, std::plus<float>());
+            colIdx++ ;
+            }
+        }
+        patchIdx++;
+    }
+
+    for(int i = 0 ; i < img->size(); i++)
+		img->data()[i] = (inputMatrix->deviceVector->data()[i] + 0.034 * 0.25 * img->data()[i])/(1 + 0.034 * 0.25 * imgWeight[i]); 
+
+    outputMatrix = new Matrix(inputMatrix->m, inputMatrix->n, inputMatrix->m, img);
+
+    end = std::chrono::steady_clock::now();
+    tot1 = end - start;
+
+    std::cout<<"    Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;
+
+}

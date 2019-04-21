@@ -70,6 +70,7 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         void createPatches();
         void initDictionary();
         void updateDictionary();
+        void createImage();
         void kSvd();
 
     friend Denoiser;
