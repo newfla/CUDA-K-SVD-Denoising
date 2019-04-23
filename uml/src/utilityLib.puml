@@ -1,0 +1,94 @@
+@startuml UtilityDiagram
+
+package utilityLib{
+
+    class Matrix{
+        + int m
+        + int n
+        + int ld
+        + host_vector* hostVector
+        + device_vector* deviceVector
+        
+        + Matrix* cloneHost()
+        + copyOnDevice()
+        + copyOnHost()
+        {static} + Matrix* randomMatrixHost(int m, int n, int ld)
+    }
+
+    class TimeElapsed{
+        + int init
+        + int working
+        + int finalize
+        + int getTotalTime()
+    }
+
+    note right: Time in milliseconds
+
+    enum MatrixOmpType{
+            CUBLAS_MULT
+            CUBLAS_ADD
+            CUBLAS_OMP
+    }
+
+    abstract class MatrixOps{
+
+        # float alfa
+        # float beta
+
+        {abstract} # init()
+        {abstract} # finalize()
+        {abstract} + work(Matrix* a , Matrix* b)
+        {abstract} + TimeElapsed* getTimeElapsed()
+        + setCoff(int alfa, int beta)
+        {static} + MatrixMult* factory(MatrixMultType, Matrix*, Matrix* ,int , int)
+    }
+
+    class CuBlasMatrixMult{
+
+        - cublasHandle_t handle
+        - cublasOperation_t op1
+        - cublasOperation_t op2
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + work(Matrix* a , Matrix* b)
+        + setOps(cublasOperation_t, cublasOperation_t) 
+    }
+
+    class CuBlasMatrixAdd{
+
+        - cublasHandle_t handle
+        - cublasOperation_t op1
+        - cublasOperation_t op2
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + work(Matrix* a , Matrix* b)
+        + setOps(cublasOperation_t op1, cublasOperation_t op2)
+    }
+
+    class CuBlasMatrixOmp{
+        - int maxIters
+        - float epsilon
+        - cublasHandle_t handle
+        - device_vector<float>* cVector
+
+        # init()
+        # finalize()
+        + work(Matrix* a , Matrix* b)
+        + setLimits(float epsilon, int maxIters)
+    }
+
+    MatrixOps --> "*" Matrix
+    MatrixOps --> "1" TimeElapsed
+    MatrixOps -> "1" MatrixOmpType 
+    CuBlasMatrixMult --|> MatrixOps : extends
+    CuBlasMatrixAdd --|> MatrixOps : extends
+    CuBlasMatrixOmp --|> MatrixOps : extends
+
+    hide MatrixOmpType methods 
+}
+
+@enduml

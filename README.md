@@ -33,10 +33,18 @@ If noisedPathFolder is the same as deNoisedPathFolder original images will be ov
 </aside>
 
 ## Class Diagram
-Relationships between classes of different packages are hidden
 
-![Image of Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/diagrammaSVD.png)
+### UtilityLib
 
+![UtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/UtilityDiagram.png)
+
+### SvdLib
+
+![SvdLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/SvdDiagram.png)
+
+### DenoisingLib
+
+![DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/DenoisingDiagram.png)
 
 ## History
  - Version 0.1 : Private Alpha

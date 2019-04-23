@@ -1,0 +1,100 @@
+@startuml SvdDiagram
+
+package svdLib {
+
+    abstract class SvdEngine{
+        
+        {abstract} # init(Matrix*)
+        {abstract} # host_vector<Matrix*> getOutputMatrices()
+        {abstract} # device_vector<Matrix*> getDeviceOutputMatrices()
+        {abstract} # work( )
+        {static} + SvdEngine* factory(SvdEngineType)
+    }
+
+    abstract class SvdCudaEngine{
+
+        # float* deviceA
+        # float* deviceU
+        # float* deviceS
+        # float* deviceVT
+        # float* deviceWork
+        # int lWork
+        # int* deviceInfo
+        # cusolverDnHandle_t cusolverH
+        
+
+        # init(Matrix*)
+        # host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
+    }
+
+    enum SvdEngineType{
+            CUSOLVER_GESVD
+            CUSOLVER_GESVDJ
+    }
+
+    class CuSolverGeSvd{
+
+        - float* deviceRWork
+
+        # init(Matrix*)
+        # work( )
+        # host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
+    }
+
+    class CuSolverGeSvdJ{
+
+        - float tolerance
+        - int maxSweeps
+        - int econ
+        - gesvdjInfo_t gesvdjParams
+        - cusolverEigMode_t jobZ
+
+        - printStat()
+        # init(Matrix*)
+        # work( )
+        # host_vector<Matrix*> getOutputMatrices()
+        # device_vector<Matrix*> getDeviceOutputMatrices()
+    }
+
+    class SvdContainer{
+
+        + SvdContainer(SvdEngine*)
+        + setMatrix(Matrix*)
+        + host_vector<Matrix*> getOutputMatrices()
+        + device_vector<Matrix*> getDeviceOutputMatrices()
+        + TimeElapsed* getTimeElapsed()
+    }
+
+    'SvdContainer -->  "*" Matrix 
+    SvdContainer --> "1" SvdEngine
+    'TimeElapsed "1" <- SvdContainer
+    'SvdEngine -> "*" Matrix
+    SvdEngine -> "1" SvdEngineType
+    SvdEngine <|-- SvdCudaEngine : extends
+    SvdCudaEngine <|-- CuSolverGeSvdJ : extends
+    SvdCudaEngine <|-- CuSolverGeSvd : extends
+
+    hide SvdEngineType methods
+    hide SvdContainer fields
+    hide SvdEngine fields
+}
+
+package utilityLib{
+    class Matrix
+    class TimeElapsed
+
+    hide Matrix fields
+    hide Matrix methods
+
+    hide TimeElapsed fields
+    hide TimeElapsed methods
+}
+
+SvdContainer --> "*" TimeElapsed
+SvdContainer --> "*" Matrix
+SvdEngine --> "*" Matrix
+
+
+@enduml

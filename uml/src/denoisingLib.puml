@@ -1,0 +1,91 @@
+@startuml DenoisingDiagram
+
+package denoisingLib{
+
+    enum DenoiserType{
+            CUDA_K_GESVD
+            CUDA_K_GESVDJ
+    }
+
+    abstract class Denoiser{
+
+        - String inputFile
+        - String outputFile
+        - CImg<float>* inputImage
+
+        {abstract} # bool loadImage()
+        {abstract} # bool saveImage()
+        {abstract} # bool internalDenoising()
+        {abstract} + signed char denoising()
+        + TimeElapsed* getTimeElapsed()
+        {static} + Denoiser* factory (DenoiserType, String input, String output)
+    }
+
+    note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
+
+    class CudaKSvdDenoiser{
+        - int patchSquareDim
+        - int slidingPatch
+        - int atoms
+        - int iter
+
+
+        - createPatch()
+        - initDictionary()
+        - updateDictionary()
+        - createImage()
+        - kSvd()
+        
+        # bool loadImage()
+        # bool saveImage()
+        # bool internalDenoising()
+        + signed char denoising()
+    }
+
+    class BatchDenoiser{
+        + host_vector<TimeElapsed*> getTimeElapsed() 
+        + host_vector<signed char> seqBatchDenoising()
+        {static} + BatchDenoiser* factory (DenoiserType type, String inputFolder, String outputFolder)
+    }
+
+    note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 
+
+
+    CudaKSvdDenoiser -|> Denoiser : extends
+    DenoiserType "1"<- CudaKSvdDenoiser
+    BatchDenoiser --> "*" Denoiser
+
+    hide BatchDenoiser fields
+    hide DenoiserType methods
+}
+
+package utilityLib{
+    class Matrix
+    class TimeElapsed
+    class Matrix
+    abstract class MatrixOps
+
+    hide Matrix fields
+    hide Matrix methods
+
+    hide TimeElapsed fields
+    hide TimeElapsed methods
+
+    hide MatrixOps fields
+    hide MatrixOps methods
+}
+
+package SvdLib{
+    class SvdContainer
+
+    hide SvdContainer fields
+    hide SvdContainer methods
+}
+
+BatchDenoiser ---> "*" TimeElapsed
+Denoiser ---> "*" TimeElapsed
+Denoiser ---> "*" Matrix
+CudaKSvdDenoiser ---> "*" MatrixOps
+CudaKSvdDenoiser ---> "*" SvdContainer
+
+@enduml

@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 include_directories("${CMAKE_SOURCE_DIR}/lib/utilityLib")
 include_directories("${CMAKE_SOURCE_DIR}/lib/svdLib")
 include_directories("${CMAKE_SOURCE_DIR}/lib/denoisingLib")
-include_directories(SYSTEM "/usr/local/cuda/include")
+
 
 IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
+
+    include_directories(SYSTEM "/usr/local/cuda/include")
 
     project(denoising VERSION 0.1.0)
 
@@ -27,7 +29,9 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
 ELSE()
 
-    set(CMAKE_CUDA_COMPILER /usr/local/cuda-10.1/bin/nvcc)
+    include_directories(SYSTEM "/opt/cuda/include")
+
+    set(CMAKE_CUDA_COMPILER /opt/cuda/bin/nvcc)
     
     IF(NOT DEFINED CMAKE_CUDA_STANDARD)
         set(CMAKE_CUDA_STANDARD 11)
