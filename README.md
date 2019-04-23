@@ -26,10 +26,10 @@ make
 ## Run
 ```Shell
 cd sorgenti/build
-./denoising noisedPathFolder deNoisedPathFolder
+./denoising json.config
 ```
 <aside class="warning">
-If noisedPathFolder is the same as deNoisedPathFolder original images will be overwritten
+In config.json if outputFolder is the same as inputFolder original images will be overwritten
 </aside>
 
 ## Class Diagram
@@ -49,7 +49,9 @@ If noisedPathFolder is the same as deNoisedPathFolder original images will be ov
 ## History
  - Version 0.1 : Private Alpha
 
-## Credits
+## Credits 
 - Based on [trungmanhhuynh](https://github.com/trungmanhhuynh/kSVD-Image-Denoising) CPU version 
 
 - CUDA OMP implementation by [IdanBanani](https://github.com/IdanBanani/Orthogonal-Matching-Pursuit--OMP--and-Batch-OMP-algorithm-)
+
+- [JSON++ library](https://github.com/hjiang/jsonxx)

@@ -1,9 +1,11 @@
 #include <denoisingLib.h>
+#include <fstream>
 
 using namespace denoising;
 using namespace svd;
 using namespace utl;
 using namespace thrust;
+using namespace jsonxx;
 
 BatchDenoiser::BatchDenoiser(){}
 
@@ -54,20 +56,31 @@ host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
     return results;
 }
 
-//************************************************************************
+//***********************************************************************************************
 //  BatchDenoiser Factory method instantiates an object based on type
 //  input:  + type (DenoiserType) of denoisers that will be used
-//          + inputFolder path from which load images
-//          + outputFolder path where save images    
+//          + jsonFile (string) contains info on where load/save images and denoising parameters 
 //  output: + batchDenoiser (BatchDenoiser*)
-//***********************************************************************
-BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string inputFolder, std::string outputFolder){
+//**********************************************************************************************
+BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     
+    Object config;
     DIR *dir;
     struct dirent *ent;
 
-    std::string inputFile, outputFile;
+    std::string inputFile, outputFile, inputFolder, outputFolder;
     std::vector<std::string> skip ={"..", "."};
+    int globalPatchSquareDim, globalSlidingPatch, globalAtoms, globalIter, globalSigma;
+    int patchSquareDim, slidingPatch, atoms, iter, sigma;
+    config.parse(std::fstream(jsonFile));
+
+    inputFolder = config.get<String> ("inputFolder");
+    outputFolder = config.get<String> ("outputFolder");
+    patchSquareDim = (int) config.get<Number> ("patchSquareDim");
+    slidingPatch = (int) config.get<Number> ("slidingPatch");
+    atoms = (int) config.get<Number> ("atoms");
+    iter = (int) config.get<Number> ("iter");
+    sigma = (int) config.get<Number> ("sigma");
 
     BatchDenoiser* batchDenoiser = new BatchDenoiser();
     batchDenoiser->times.push_back(new TimeElapsed());
@@ -83,11 +96,14 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string inputFolder
             
             Denoiser* denoiser = Denoiser::factory(type, inputFile, outputFile);
 
+            
+
             batchDenoiser->denoisers.push_back(denoiser);
             batchDenoiser->times.push_back(denoiser->getTimeElapsed());            
         }
         closedir (dir);
     } else
         return NULL;
+    
     return batchDenoiser;
 }

@@ -1,5 +1,6 @@
 #if !defined(DENOISING_H)
 
+#include <jsonxx.h>
 #include <string>
 #include <algorithm>
 #include <dirent.h>
@@ -26,6 +27,8 @@ class denoising::Denoiser{
         utl::TimeElapsed* getTimeElapsed();
 
     protected:
+        int patchSquareDim = 8;
+        int slidingPatch = 2;
         utl::Matrix* inputMatrix = NULL;
         utl::Matrix* outputMatrix = NULL;
         utl::TimeElapsed* timeElapsed = NULL;
@@ -56,8 +59,6 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         bool internalDenoising();
 
     private:
-        int patchSquareDim = 8;
-        int slidingPatch = 2;
         int atoms = 256;
         int iter = 10;
         DenoiserType type;
@@ -82,7 +83,7 @@ class denoising::BatchDenoiser{
         ~BatchDenoiser();
         thrust::host_vector<utl::TimeElapsed*> getTimeElapsed();
         thrust::host_vector<signed char> seqBatchDenoising();
-        static BatchDenoiser* factory(DenoiserType, std::string, std::string);
+        static BatchDenoiser* factory(DenoiserType, std::string);
 
 
     protected:
