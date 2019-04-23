@@ -145,8 +145,6 @@ void CudaKSvdDenoiser::initDictionary(){
 
     auto start = std::chrono::steady_clock::now();
     int dim = patchSquareDim * patchSquareDim;
-    square<float> unaryOp;
-    plus<float> binaryOp;
     device_vector<device_vector<float>* > container (atoms);
     device_vector<float> * dict = new device_vector<float>(atoms * dim);
 
@@ -157,7 +155,7 @@ void CudaKSvdDenoiser::initDictionary(){
         dict->insert(dict->end(), noisePatches->deviceVector->begin() + i * dim, noisePatches->deviceVector->begin() + (i + 1) * dim);
 
         //Calculate norm
-        float norm = sqrtf(transform_reduce(dict->begin() + i * dim, dict->begin() + (i+1) * dim, unaryOp, 0, binaryOp));
+        float norm = sqrtf(transform_reduce(dict->begin() + i * dim, dict->begin() + (i+1) * dim, mySquare<float>(), 0, myPlus<float>()));
 
         //Normalize vector
         transform(dict->begin() + i * dim, dict->begin() + (i + 1) * dim, dict->begin() + i * dim, _1/norm);

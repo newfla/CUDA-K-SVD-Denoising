@@ -54,8 +54,8 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testBatchDenoiser(){
-     BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Tesi/img/config.json");
-   // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input", "/home/fbizzarri/prova/img/output");
+     BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "../config.json");
+   // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input");
     batchDenoiser->seqBatchDenoising();
 
     host_vector<utl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();

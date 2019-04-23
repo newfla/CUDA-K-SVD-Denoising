@@ -8,10 +8,12 @@ package denoisingLib{
     }
 
     abstract class Denoiser{
-
         - String inputFile
         - String outputFile
         - CImg<float>* inputImage
+
+        # int patchSquareDim
+        # int slidingPatch
 
         {abstract} # bool loadImage()
         {abstract} # bool saveImage()
@@ -24,12 +26,10 @@ package denoisingLib{
     note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
 
     class CudaKSvdDenoiser{
-        - int patchSquareDim
-        - int slidingPatch
-        - int atoms
-        - int iter
-
-
+        # int atoms
+        # int iter
+        # int sigma
+        
         - createPatch()
         - initDictionary()
         - updateDictionary()
@@ -45,7 +45,7 @@ package denoisingLib{
     class BatchDenoiser{
         + host_vector<TimeElapsed*> getTimeElapsed() 
         + host_vector<signed char> seqBatchDenoising()
-        {static} + BatchDenoiser* factory (DenoiserType type, String inputFolder, String outputFolder)
+        {static} + BatchDenoiser* factory (DenoiserType type, String jsonConfig)
     }
 
     note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 

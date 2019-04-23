@@ -36,15 +36,15 @@ In config.json if outputFolder is the same as inputFolder original images will b
 
 ### UtilityLib
 
-![UtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/UtilityDiagram.png)
+![UtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/UtilityDiagram.png)
 
 ### SvdLib
 
-![SvdLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/SvdDiagram.png)
+![SvdLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/SvdDiagram.png)
 
 ### DenoisingLib
 
-![DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/classDiagram/uml/src/DenoisingDiagram.png)
+![DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
 
 ## History
  - Version 0.1 : Private Alpha
