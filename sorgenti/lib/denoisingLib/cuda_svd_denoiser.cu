@@ -1,12 +1,9 @@
 #include <denoisingLib.h>
-#include <iostream> //TODO da togliere
-#include <thrust/transform.h>
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
 
 using namespace denoising;
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
+using namespace matUtl;
 using namespace thrust;
 using namespace thrust::placeholders;
 
@@ -145,23 +142,23 @@ void CudaKSvdDenoiser::initDictionary(){
 
     auto start = std::chrono::steady_clock::now();
     int dim = patchSquareDim * patchSquareDim;
-    device_vector<device_vector<float>* > container (atoms);
-    device_vector<float> * dict = new device_vector<float>(atoms * dim);
+    device_vector<float> * dict = new device_vector<float>();
 
     //Copy Patches and normalization using norm2
     for (int i = 0; i < atoms; i++){
         
         //Copy a single patch
-        dict->insert(dict->end(), noisePatches->deviceVector->begin() + i * dim, noisePatches->deviceVector->begin() + (i + 1) * dim);
+        dict->insert(dict->end(), noisePatches->deviceVector->begin() + (i * dim), noisePatches->deviceVector->begin() + ((i + 1) * dim));
 
         //Calculate norm
-        float norm = sqrtf(transform_reduce(dict->begin() + i * dim, dict->begin() + (i+1) * dim, mySquare<float>(), 0, myPlus<float>()));
+        float norm = sqrtf(transform_reduce(dict->begin() + (i * dim), dict->begin() + ((i+1) * dim), mySquare<float>(), 0, myPlus<float>()));
 
         //Normalize vector
-        transform(dict->begin() + i * dim, dict->begin() + (i + 1) * dim, dict->begin() + i * dim, _1/norm);
+        transform(dict->begin() + (i * dim), dict->begin() + ((i + 1) * dim), dict->begin() + (i * dim), _1/norm);
     }
 
     dictionary = new Matrix(dim, atoms, dim, dict);
+    //std::cout<<dict->size();
 
     auto end = std::chrono::steady_clock::now();
     std::cout<<"    # Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;
@@ -182,7 +179,6 @@ void CudaKSvdDenoiser::updateDictionary(){
 		device_vector<float> selectSparseCode;
         device_vector<float> error;
         MatrixOps* mult;
-        MatrixOps* tras;
         Matrix* dx;
         Matrix* v;
         Matrix* u;
@@ -190,11 +186,13 @@ void CudaKSvdDenoiser::updateDictionary(){
         float bestS;
 
         //Find for each patch relevant atoms --> idx!=0 
-		for(int i = 0 ; i < sparseCode->n ;i++){ //-> n = #NoisePatches
+		for(int i = 0; i < sparseCode->n; i++){ //-> n = #NoisePatches
 
-			if(sparseCode->deviceVector->data()[i* sparseCode->m + atomIdx] != 0) 
+			if(sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx] > 0) 
 				relevantDataIndices.push_back(i); 
 		}
+
+        std::cout<<"relevantIndices.size"<<relevantDataIndices.size()<<std::endl;
 
         //Only update atom shared by 1 or more pacthes
         if(relevantDataIndices.size()<1)
@@ -225,9 +223,9 @@ void CudaKSvdDenoiser::updateDictionary(){
         device_vector<Matrix*> usvt = svdContainer->getDeviceOutputMatrices();
         
         //Traspose V
-        tras = MatrixOps::factory(CUBLAS_ADD);
+      /*  tras = MatrixOps::factory(CUBLAS_ADD);
         ((CuBlasMatrixAdd*)tras)->setOps(CUBLAS_OP_T, CUBLAS_OP_T);
-        v = tras->work(usvt[2], usvt[2]);
+        v = tras->work(usvt[2], usvt[2]);*/
 
         //Replace dictionary column
         u = usvt[0];        
@@ -236,6 +234,7 @@ void CudaKSvdDenoiser::updateDictionary(){
 
         //Calculate new coeffs
         s = usvt[1];
+        v = usvt[2];
         bestS = s->deviceVector->data()[0];
         transform(v->deviceVector->begin(), v->deviceVector->begin() + v->m, v->deviceVector->begin(), _1 * -1.f * bestS);
 
@@ -253,11 +252,9 @@ void CudaKSvdDenoiser::updateDictionary(){
 //*************
 void CudaKSvdDenoiser::kSvd(){
 
-    //sparseCode = new Matrix(atoms, noisePatches->n, atoms, new device_vector<float>(atoms * noisePatches->n));
-
     for(int i = 0 ; i < iter ; i++){
 
-        std::cout<<"Iter: "<<iter<<std::endl;
+        std::cout<<"Iter: "<<i<<std::endl;
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
@@ -265,7 +262,7 @@ void CudaKSvdDenoiser::kSvd(){
         CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
         omp->setLimits(FLT_EPSILON, 5);
         sparseCode = omp->work(noisePatches, dictionary);
-
+        //std::cout<<"SparseCode size: "<< sparseCode->deviceVector->size()<<std::endl;
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
         std::cout<<"    OMP Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;

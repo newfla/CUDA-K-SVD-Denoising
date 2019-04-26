@@ -1,6 +1,7 @@
-#include <utilityLib.h>
+#include <matUtilityLib.h>
 
-using namespace utl;
+using namespace matUtl;
+using namespace baseUtl;
 
 MatrixOps::MatrixOps(){}
 

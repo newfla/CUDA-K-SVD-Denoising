@@ -1,9 +1,8 @@
 #include <denoisingLib.h>
-#include <fstream>
 
 using namespace denoising;
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 using namespace thrust;
 using namespace jsonxx;
 
@@ -25,7 +24,7 @@ BatchDenoiser::~BatchDenoiser(){
 //  Obtain time stats
 //  output:  + timers (host_vector<TimeElapsed*>) ms timers foreach image
 //***********************************************************************
-host_vector<utl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
+host_vector<baseUtl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 
     times[0]->init = 0;
     times[0]->init = 0;

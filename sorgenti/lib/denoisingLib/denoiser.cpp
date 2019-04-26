@@ -2,7 +2,7 @@
 
 using namespace denoising;
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 using namespace cimg_library;
 
 Denoiser::Denoiser(){
@@ -105,6 +105,6 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
     return denoiser;
 }
 
-utl::TimeElapsed* Denoiser::getTimeElapsed(){
+baseUtl::TimeElapsed* Denoiser::getTimeElapsed(){
     return timeElapsed;
 }

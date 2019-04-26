@@ -1,9 +1,7 @@
 #include <svdLib.h>
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 
 CuSolverGeSvd::CuSolverGeSvd(){}
 
@@ -65,7 +63,7 @@ thrust::host_vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major DEViCE
 //*****************************************************************
-thrust::device_vector<utl::Matrix*> CuSolverGeSvd::getDeviceOutputMatrices(){
+thrust::device_vector<baseUtl::Matrix*> CuSolverGeSvd::getDeviceOutputMatrices(){
 
     cudaFree(deviceInfo);
     if(deviceRWork != NULL )

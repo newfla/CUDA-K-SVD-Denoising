@@ -1,17 +1,20 @@
-#include <utilityLib.h>
+#include <matUtilityLib.h>
 
-using namespace utl;
+using namespace matUtl;
+using namespace baseUtl;
 using namespace thrust;
 
-CuBlasMatrixAdd::CuBlasMatrixAdd(){}
+CuBlasMatrixMult::CuBlasMatrixMult(){}
 
 //********************************************************
 // Create cuBlas additional data and move data on DEVICE
 //*******************************************************
-void CuBlasMatrixAdd::init(){
+void CuBlasMatrixMult::init(){
 
     auto start = std::chrono::steady_clock::now();
 
+    cublasCreate(&handle);
+    
     if(a->deviceVector == NULL)
         a->copyOnDevice();
 
@@ -27,7 +30,7 @@ void CuBlasMatrixAdd::init(){
 //******************************
 // Clear cuBlas additional data
 //*****************************
-void CuBlasMatrixAdd::finalize(){
+void CuBlasMatrixMult::finalize(){
 
     auto start = std::chrono::steady_clock::now();
 
@@ -38,21 +41,22 @@ void CuBlasMatrixAdd::finalize(){
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 }
 
+
 //************************************************
 // Set cuBlas ops
 // input = 2x operation type  (cublasOperation_t) 
 //***********************************************
-void CuBlasMatrixAdd::setOps(cublasOperation_t op1, cublasOperation_t op2){
+void CuBlasMatrixMult::setOps(cublasOperation_t op1, cublasOperation_t op2){
 
     this->op1 = op1;
     this->op2 = op2;
 }
 
-//**********************************
-// CuBlas Sgeam call
-// output = α op ( A ) + β op ( B )
-//*********************************
-utl::Matrix* CuBlasMatrixAdd::work(Matrix* a, Matrix* b){
+//*******************
+// CuBlas Sgemm call
+// output = alfa*op( A )*op( B ) + beta*C,
+//******************
+baseUtl::Matrix* CuBlasMatrixMult::work(Matrix* a, Matrix* b){
 
     this->a = a;
     this->b = b;
@@ -65,17 +69,18 @@ utl::Matrix* CuBlasMatrixAdd::work(Matrix* a, Matrix* b){
     float* pointerB = raw_pointer_cast(b->deviceVector->data());
     float* pointerC = raw_pointer_cast(cVector->data());
 
-    cublasSgeam(handle, 
+    cublasSgemm(handle,
                 op1,
                 op2,
                 a->m,
                 b->n,
+                a->n,
                 &alfa,
                 pointerA,
                 a->ld,
-                &beta,
                 pointerB,
                 b->ld,
+                &beta,
                 pointerC,
                 b->ld);
 

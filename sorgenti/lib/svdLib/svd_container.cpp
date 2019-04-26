@@ -1,7 +1,7 @@
 #include <svdLib.h>
 
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 
 //***************************************************************************
 //  Constructor   

@@ -1,9 +1,7 @@
 #include <svdLib.h>
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 
 CuSolverGeSvdJ::CuSolverGeSvdJ(){}
 
@@ -47,7 +45,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
 void CuSolverGeSvdJ::work(){
 
     //DGESVDJ
-    cusolverDnSgesvdj(
+    std::cout<<"stato cuSolver: "<<cusolverDnSgesvdj(
         cusolverH,
         jobZ,
         econ,
@@ -84,7 +82,7 @@ thrust::host_vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major DEViCE
 //*****************************************************************
-thrust::device_vector<utl::Matrix*> CuSolverGeSvdJ::getDeviceOutputMatrices(){
+thrust::device_vector<baseUtl::Matrix*> CuSolverGeSvdJ::getDeviceOutputMatrices(){
 
     cudaFree(deviceInfo);
     cusolverDnDestroyGesvdjInfo(gesvdjParams);

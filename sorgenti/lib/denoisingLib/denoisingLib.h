@@ -3,9 +3,12 @@
 #include <jsonxx.h>
 #include <string>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <dirent.h>
 #include <CImg.h>
-#include <svdLib.h>
+#include <matUtilityLib.h>
+#include <thrust/transform_reduce.h>
 
 namespace denoising{
 
@@ -24,14 +27,14 @@ class denoising::Denoiser{
         virtual ~Denoiser();
         static Denoiser* factory(DenoiserType, std::string, std::string);
         virtual signed char denoising() = 0;
-        utl::TimeElapsed* getTimeElapsed();
+        baseUtl::TimeElapsed* getTimeElapsed();
 
     protected:
         int patchSquareDim = 8;
         int slidingPatch = 2;
-        utl::Matrix* inputMatrix = NULL;
-        utl::Matrix* outputMatrix = NULL;
-        utl::TimeElapsed* timeElapsed = NULL;
+        baseUtl::Matrix* inputMatrix = NULL;
+        baseUtl::Matrix* outputMatrix = NULL;
+        baseUtl::TimeElapsed* timeElapsed = NULL;
         
         Denoiser();
         virtual bool loadImage();
@@ -64,9 +67,9 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
 
     private:
         DenoiserType type;
-        utl::Matrix* noisePatches = NULL;
-        utl::Matrix* dictionary = NULL;
-        utl::Matrix* sparseCode = NULL;
+        baseUtl::Matrix* noisePatches = NULL;
+        baseUtl::Matrix* dictionary = NULL;
+        baseUtl::Matrix* sparseCode = NULL;
         svd::SvdContainer* svdContainer = NULL;
         
         CudaKSvdDenoiser();
@@ -84,13 +87,13 @@ class denoising::BatchDenoiser{
 
     public:
         ~BatchDenoiser();
-        thrust::host_vector<utl::TimeElapsed*> getTimeElapsed();
+        thrust::host_vector<baseUtl::TimeElapsed*> getTimeElapsed();
         thrust::host_vector<signed char> seqBatchDenoising();
         static BatchDenoiser* factory(DenoiserType, std::string);
 
 
     protected:
-        thrust::host_vector<utl::TimeElapsed*> times;
+        thrust::host_vector<baseUtl::TimeElapsed*> times;
         thrust::host_vector<Denoiser*> denoisers;
 
     private:

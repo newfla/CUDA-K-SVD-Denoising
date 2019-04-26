@@ -1,18 +1,18 @@
-#if !defined(UTILITY_H)
+#if !defined(MAT_UTILITY_H)
 
 #include <chrono>
 #include <cstdint>
 #include <random>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/transform.h>
+#include <thrust/functional.h>
 #include <cublas_v2.h>
 #include <float.h>
-
-namespace utl{
+#include <svdLib.h>
+namespace matUtl{
 
     //Class section
-    class Matrix;
-    class TimeElapsed;
     class MatrixOps;
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
@@ -22,49 +22,21 @@ namespace utl{
     enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP};
 };
 
-class utl::Matrix{
+
+class matUtl::MatrixOps{
 
     public:
-        int m, n, ld;
-        thrust::host_vector<float> *hostVector = NULL;
-        thrust::device_vector<float> *deviceVector = NULL;
-
-        Matrix(int, int, int, float*);
-        Matrix(int, int, int, thrust::host_vector<float>*);
-        Matrix(int, int, int, thrust::device_vector<float>*);
-        ~Matrix();
-        Matrix* cloneHost();
-        void copyOnDevice();
-        void copyOnHost();
-        static Matrix* randomMatrixHost(int, int, int); 
-
-    private:
-        Matrix();
-
-};
-
-class utl::TimeElapsed{
-
-    public:
-        int64_t init, working, finalize;
-
-        int64_t getTotalTime();
-};
-
-class utl::MatrixOps{
-
-    public:
-        virtual utl::Matrix* work(Matrix* a, Matrix* b) = 0;
+        virtual baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b) = 0;
         virtual ~MatrixOps();
-        utl::TimeElapsed* getTimeElapsed();
+        baseUtl::TimeElapsed* getTimeElapsed();
         void setCoeff(float, float);
         static MatrixOps* factory(MatrixOpsType);
 
     protected:
-        utl::Matrix* a;
-        utl::Matrix* b;
-        utl::Matrix* c;
-        utl::TimeElapsed* timeElapsed = new utl::TimeElapsed();
+        baseUtl::Matrix* a;
+        baseUtl::Matrix* b;
+        baseUtl::Matrix* c;
+        baseUtl::TimeElapsed* timeElapsed = new baseUtl::TimeElapsed();
         float alfa = 1;
         float beta = 0;
         
@@ -74,10 +46,10 @@ class utl::MatrixOps{
 
 };
 
-class utl::CuBlasMatrixMult : public utl::MatrixOps{
+class matUtl::CuBlasMatrixMult : public matUtl::MatrixOps{
 
     public:
-        utl::Matrix* work(Matrix* a, Matrix* b);
+        baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         void setOps(cublasOperation_t, cublasOperation_t);
         
     protected:
@@ -94,10 +66,10 @@ class utl::CuBlasMatrixMult : public utl::MatrixOps{
 
 };
 
-class utl::CuBlasMatrixAdd : public utl::MatrixOps{
+class matUtl::CuBlasMatrixAdd : public matUtl::MatrixOps{
 
     public:
-        utl::Matrix* work(Matrix* a, Matrix* b);
+        baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         void setOps(cublasOperation_t, cublasOperation_t);
         
     protected:
@@ -114,10 +86,11 @@ class utl::CuBlasMatrixAdd : public utl::MatrixOps{
 
 };
 
-class utl::CuBlasMatrixOmp : public utl::MatrixOps{
+class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
 
     public:
-        utl::Matrix* work(Matrix* a, Matrix* b);
+        baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
+        baseUtl::Matrix* work2(baseUtl::Matrix* a, baseUtl::Matrix* b);
         void setLimits(float, int);
 
     protected:

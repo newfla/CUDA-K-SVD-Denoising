@@ -1,6 +1,6 @@
-#include <utilityLib.h>
+#include <baseUtilityLib.h>
 
-using namespace utl;
+using namespace baseUtl;
 using namespace thrust;
 
 //***********************************************

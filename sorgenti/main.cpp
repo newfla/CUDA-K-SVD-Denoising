@@ -2,7 +2,7 @@
 
 using namespace denoising;
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 using namespace thrust;
 using namespace cimg_library;
 
@@ -54,11 +54,11 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testBatchDenoiser(){
-     BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "../config.json");
-   // BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/img/input");
+    //BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Denosing-SVD/sorgenti/config.1.json");
+    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/config.json");
     batchDenoiser->seqBatchDenoising();
 
-    host_vector<utl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
+    host_vector<baseUtl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
 
     double init = times[0]->init, work = times[0]->working, fin = times[0]->finalize, tot = times[0]->getTotalTime();
 
@@ -67,7 +67,7 @@ void testBatchDenoiser(){
     fin/=1000.;
     tot/=1000.;
 
-    std::cout<<"# Total execution time: "<<tot<<" s"<<std::endl;
+    std::cout<<std::endl<<"# Total execution time: "<<tot<<" s"<<std::endl;
     std::cout<<"    Total init time: "<<init<<" s"<<std::endl;
     std::cout<<"    Total working time: "<<work<<" s"<<std::endl;
     std::cout<<"    Total finalize time: "<<fin<<" s"<<std::endl;
@@ -82,7 +82,7 @@ void testBatchDenoiser(){
         work/=1000.;
         tot/=1000.;
 
-        std::cout<<"## Image: "<<i<<"execution time: "<<tot<<" s"<<std::endl;
+        std::cout<<std::endl<<"## Image: "<<i<<" execution time: "<<tot<<" s"<<std::endl;
         std::cout<<"    init time: "<<init<<" ms"<<std::endl;
         std::cout<<"    working time: "<<work<<" s"<<std::endl;
         std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;

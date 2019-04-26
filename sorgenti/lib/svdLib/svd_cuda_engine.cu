@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 
 using namespace svd;
-using namespace utl;
+using namespace baseUtl;
 using namespace thrust;
 
 SvdCudaEngine::SvdCudaEngine(){}
@@ -24,8 +24,12 @@ void SvdCudaEngine::init(Matrix* matrix){
     cudaMalloc ((void**)&deviceInfo, sizeof(int));
 
     //Allocate memory on device
+    less = matrix->m;
+    if(less > matrix->n)
+        less= matrix->n;
+
     cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(float));
-    cudaMalloc((void**) &deviceS, (matrix->n)*sizeof(float));
+    cudaMalloc((void**) &deviceS, (less)*sizeof(float));
     cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(float));
 
     //Copy matrix on device
@@ -52,12 +56,12 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     //Copy back to host
     cudaMemcpy(hostU, deviceU, (input->ld)*(input->m)*sizeof(float), cudaMemcpyDeviceToHost );
     cudaMemcpy(hostVT, deviceVT, (input->n)*(input->n)*sizeof(float), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostS, deviceS, (input->n)*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hostS, deviceS, (less)*sizeof(float), cudaMemcpyDeviceToHost);
 
     //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, hostU);
     outputVT = new Matrix(input->n, input->n, input->n, hostVT);
-    outputS = new Matrix (1, input->n, 1, hostS);
+    outputS = new Matrix (1, less, 1, hostS);
 
     //Save SVD
     output.push_back(outputU);
