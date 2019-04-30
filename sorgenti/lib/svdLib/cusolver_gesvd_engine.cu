@@ -63,7 +63,7 @@ thrust::host_vector<Matrix*> CuSolverGeSvd::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major DEViCE
 //*****************************************************************
-thrust::device_vector<baseUtl::Matrix*> CuSolverGeSvd::getDeviceOutputMatrices(){
+thrust::host_vector<baseUtl::Matrix*> CuSolverGeSvd::getDeviceOutputMatrices(){
 
     cudaFree(deviceInfo);
     if(deviceRWork != NULL )

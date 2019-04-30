@@ -8,7 +8,6 @@
 #include <thrust/transform.h>
 #include <thrust/functional.h>
 #include <cublas_v2.h>
-#include <float.h>
 #include <svdLib.h>
 namespace matUtl{
 
@@ -102,7 +101,6 @@ class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
         cublasHandle_t handle;
         thrust::device_vector<float>* sparseCode;
         int maxIters = 5;
-        float epsilon = FLT_EPSILON;
 
     friend MatrixOps;
 };

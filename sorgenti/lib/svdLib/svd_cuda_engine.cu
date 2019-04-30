@@ -26,11 +26,11 @@ void SvdCudaEngine::init(Matrix* matrix){
     //Allocate memory on device
     less = matrix->m;
     if(less > matrix->n)
-        less= matrix->n;
+        less = matrix->n;
 
-    cudaMalloc((void**) &deviceU, (matrix->ld)*(matrix->m)*sizeof(float));
-    cudaMalloc((void**) &deviceS, (less)*sizeof(float));
-    cudaMalloc((void**) &deviceVT, (matrix->n)*(matrix->n)*sizeof(float));
+    cudaMalloc((void**) &deviceU, (matrix->ld) * (matrix->m)*sizeof(float));
+    cudaMalloc((void**) &deviceS, (less) * sizeof(float));
+    cudaMalloc((void**) &deviceVT, (matrix->n) * (matrix->n)*sizeof(float));
 
     //Copy matrix on device
     if(matrix->deviceVector == NULL)
@@ -49,14 +49,14 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     Matrix *outputU, *outputVT, *outputS;
 
     //Cpu matrix resource allocation
-    hostU = new float[(input->m)*(input->m)]();
-    hostVT = new float[(input->n)*(input->n)]();
-    hostS = new float[input->n]();
+    hostU = new float[(input->m) * (input->m)]();
+    hostVT = new float[(input->n) * (input->n)]();
+    hostS = new float[less]();
 
     //Copy back to host
-    cudaMemcpy(hostU, deviceU, (input->ld)*(input->m)*sizeof(float), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostVT, deviceVT, (input->n)*(input->n)*sizeof(float), cudaMemcpyDeviceToHost );
-    cudaMemcpy(hostS, deviceS, (less)*sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(hostU, deviceU, (input->ld) * (input->m) * sizeof(float), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostVT, deviceVT, (input->n) * (input->n) * sizeof(float), cudaMemcpyDeviceToHost );
+    cudaMemcpy(hostS, deviceS, (less) * sizeof(float), cudaMemcpyDeviceToHost);
 
     //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, hostU);
@@ -86,19 +86,19 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major DEVICE
 //*****************************************************************
-thrust::device_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
+thrust::host_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
 
     Matrix *outputU, *outputVT, *outputS;
 
     //Wrap raw pointer
-    device_ptr<float> u(deviceU),
-                    vt(deviceVT),
-                    s(deviceS);
+    device_ptr<float> *u = new device_ptr<float>(deviceU),
+                      *vt = new device_ptr<float>(deviceVT),
+                      *s = new device_ptr<float>(deviceS);
 
     //Allocate memory on host
-    outputU = new Matrix(input->ld, input->m, input->m, new device_vector<float>(u, u + (input->ld * input->m)));
-    outputVT = new Matrix(input->n, input->n, input->n, new device_vector<float>(vt, vt + (input->n * input->n)));
-    outputS = new Matrix (1, input->n, 1, new device_vector<float>(s, s + input->n));
+    outputU = new Matrix(input->ld, input->m, input->m, new device_vector<float>(*u, *u + (input->m * input->m)));
+    outputVT = new Matrix(input->n, input->n, input->n, new device_vector<float>(*vt, *vt + (input->n * input->n)));
+    outputS = new Matrix (1, less, 1, new device_vector<float>(*s, *s + less));
 
     //Save SVD
     output.push_back(outputU);
@@ -111,7 +111,7 @@ thrust::device_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
     cusolverDnDestroy(cusolverH);
     input->deviceVector = NULL;
 
-    cudaDeviceReset();
+    //cudaDeviceReset();
 
     return output;
 }

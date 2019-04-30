@@ -63,7 +63,7 @@ thrust::host_vector<Matrix*> SvdContainer::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and measure SvdEngine last phase overhead 
 //  output:  + matrices (Matrix*) float, collum-major DEVICE
 //*********************************************************************************
-thrust::device_vector<Matrix*> SvdContainer::getDeviceOutputMatrices(){
+thrust::host_vector<Matrix*> SvdContainer::getDeviceOutputMatrices(){
 
     thrust::host_vector<Matrix*> output;
 

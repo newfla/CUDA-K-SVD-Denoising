@@ -8,16 +8,6 @@ using namespace thrust::placeholders;
 
 CuBlasMatrixOmp::CuBlasMatrixOmp(){}
 
-//**************************************
-//  Set eps_float maxIter
-//  input: epsilon maxIter (float, int as float)
-//*************************************
-void CuBlasMatrixOmp::setLimits(float epsilon, int maxIters){
-    
-    this->epsilon = epsilon;
-    this->maxIters = (int) maxIters;
-}
-
 //********************************************************
 // Create cuBlas additional data and move data on DEVICE
 //*******************************************************
@@ -33,7 +23,7 @@ void CuBlasMatrixOmp::init(){
     if(b->deviceVector == NULL)
         b->copyOnDevice();
 
-    sparseCode = new device_vector<float>();
+    sparseCode = new device_vector<float>();//b->n * a->n);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -46,7 +36,7 @@ void CuBlasMatrixOmp::finalize(){
 
     auto start = std::chrono::steady_clock::now();
 
-    c = new Matrix(b->n, a->n, b->n, sparseCode);
+    c = new Matrix(a->n, b->n, a->n, sparseCode);
     cublasDestroy(handle);
 
     auto end = std::chrono::steady_clock::now();
@@ -71,9 +61,8 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
     float* noisePatches = raw_pointer_cast(patchesMatrix->deviceVector->data());
     float* dictionary = raw_pointer_cast(dictionaryMatrix->deviceVector->data());
-    float* sparseCodeV = raw_pointer_cast(sparseCode->data());
     float norm = 0;
-    int chosenAtomIdx = 0;
+    int max = 0, min = 0, chosenAtomIdx = 0;
 
     for(int inputIdx = 0; inputIdx < patchesMatrix->n; inputIdx++){ //n == #columns == # patches
 
@@ -85,10 +74,10 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         device_vector<int> chosenAtomIdxList;
 		device_vector<float> chosenAtomList; 
         int iter = 0;
-
+        //std::cout<<"InputIDx: "<<inputIdx+1<<std::endl;
         while(iter < maxIters){
 
-            std::cout<<"Iter OMP: "<<iter<<std::endl;
+           // std::cout<<"Iter OMP: "<<iter+1<<std::endl;
         
             device_vector<float> proj(dictionaryMatrix->n,0);
 
@@ -107,59 +96,62 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                         raw_pointer_cast(proj.data()),
                         1);
 
-            std::cout<<"calcolo del residuo iniziale\n";
-
             cublasIsamax(handle,
                          dictionaryMatrix->n,
                          raw_pointer_cast(proj.data()),
                          1,
-                         &chosenAtomIdx);
+                         &max);
+            max--;
 
-            chosenAtomIdx--;
+            cublasIsamin(handle,
+                         dictionaryMatrix->n,
+                         raw_pointer_cast(proj.data()),
+                         1,
+                         &min);
+            min--;
 
-            std::cout<<"Becco atomo + grande:"<<chosenAtomIdx<<std::endl;
+            chosenAtomIdx = max;
+
+            if(abs(proj[max]) < abs(proj[min]));
+                chosenAtomIdx = min;
+
+           /* std::cout << "final select atom idx = " << chosenAtomIdx <<  std::endl ;
+            std::cout << "final max product =" << proj[chosenAtomIdx]<<  std::endl ;
+		    std::cin.get() ;*/
 
             device_vector<float> chosenAtom(dictionaryMatrix->deviceVector->begin() + (chosenAtomIdx * dictionaryMatrix->m),
-                                  dictionaryMatrix->deviceVector->begin() + ((chosenAtomIdx +1) * dictionaryMatrix->m));
+                                  dictionaryMatrix->deviceVector->begin() + ((chosenAtomIdx + 1) * dictionaryMatrix->m));
 
             chosenAtomIdxList.push_back(chosenAtomIdx);
 
             chosenAtomList.insert(chosenAtomList.end(), chosenAtom.begin(), chosenAtom.end());
 
-            std::cout<<"creo copia di choosenAtomList perchè verrà modificata da SVD\n";
-
+            //ChosenAtomList Pseudo-Inverse
             device_vector<float>* copiedList = new device_vector<float> (chosenAtomList.begin(), chosenAtomList.end());
-            Matrix * toPinvert = new Matrix( dictionaryMatrix->m, chosenAtomList.size() / dictionaryMatrix->m, dictionaryMatrix->m, copiedList);
-
-            std::cout<<"lunghezza chhsoenAtomList: "<<chosenAtomList.size()<<std::endl;
+            Matrix* toPinvert = new Matrix(dictionaryMatrix->m, chosenAtomIdxList.size(), dictionaryMatrix->m, copiedList);
 
             SvdContainer* pointer1 = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
             pointer1->setMatrix(toPinvert);
-            device_vector<Matrix*> usv = pointer1->getDeviceOutputMatrices();
+            host_vector<Matrix*> usv = pointer1->getDeviceOutputMatrices();
             Matrix* u = usv[0];
             Matrix* s = usv[1];
             Matrix* v = usv[2]; 
 
-            std::cout<<"Svd fatto\n";
-
             device_vector<float> sVector(u->m * v->n,0);            
-            device_vector<float> tempMatMult(v->m * u->m);
+            device_vector<float> tempMatMult(v->n * u->m);
             device_vector<float> pseudoInverse(v->m * u->m);
 
             for(int i = 0; i < s->m; i++){
-
-                //if( s->deviceVector->data()[i] > 1e-4 && s->deviceVector->data()[i] != 0)
-                    sVector[(i * u->m) + i] = 1.;//s->deviceVector->data()[i];
-
+                
+                if(s->deviceVector->data()[i] > 1e-4 && s->deviceVector->data()[i] != 0)
+                    sVector[(i * u->m) + i] = 1./s->deviceVector->data()[i];
             }
-
-            std::cout<<"Aggiornamento diagonale";
 
             cublasSgemm(handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_T,
                 v->m,
-                u->n,
+                u->m,
                 v->n,
                 &alfa,
                 raw_pointer_cast(v->deviceVector->data()),
@@ -173,17 +165,19 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             cublasSgemm(handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_T,
-                v->m,
+                v->n,
                 u->m,
-                u->n,
+                u->m,
                 &alfa,
                 raw_pointer_cast(tempMatMult.data()),
                 v->ld,
-                raw_pointer_cast(sVector.data()),
+                raw_pointer_cast(u->deviceVector->data()),
                 u->ld,
                 &beta,
                 raw_pointer_cast(pseudoInverse.data()),
-                b->ld);
+                v->ld);
+
+
 
             device_vector<float> weightList(chosenAtomIdxList.size());
 
@@ -200,6 +194,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                         raw_pointer_cast(weightList.data()),
                         1);
 
+            //store coefficient 
             for(int i = 0 ; i < chosenAtomIdxList.size() ; i++){
 				int thisAtomIdx = chosenAtomIdxList[i] ; 
 				thisSparseCode[thisAtomIdx] = weightList[i];
@@ -223,7 +218,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             transform(thisInput.begin(), thisInput.end(), tempVec.begin(), residualVec.begin(), minus<float>());
             
             cublasSnrm2(handle,
-                    dictionaryMatrix->n,
+                    dictionaryMatrix->m,
                     raw_pointer_cast(residualVec.data()),
                     1,
                     &norm);
@@ -231,14 +226,16 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             if(norm < 0.001) break;
             
             iter++;
+            delete pointer1;
         }
+        sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
     }
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     finalize();
-
+   // free(pointer1);
     return c;
 }
 
@@ -284,7 +281,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* dictionaryMatrix, Matrix* patche
                     &normi);
 
         int iter = 0;
-        iterEpsilon = sqrtf( epsilon * normi);
+        iterEpsilon = sqrtf( 1e-4 * normi);
         normf = normi;
         while (normf > iterEpsilon && iter < maxIters){
             

@@ -9,7 +9,16 @@ using namespace thrust::placeholders;
 
 
 CudaKSvdDenoiser::CudaKSvdDenoiser(){
+}
 
+CudaKSvdDenoiser::~CudaKSvdDenoiser(){
+    //TODO
+}
+
+//********************
+//  Istantiate SvdObj
+//*******************
+void CudaKSvdDenoiser::buildSvdContainer(){
     switch (type)
         {
             case CUSOLVER_GESVD:
@@ -22,10 +31,6 @@ CudaKSvdDenoiser::CudaKSvdDenoiser(){
                 break;
          
         }
-}
-
-CudaKSvdDenoiser::~CudaKSvdDenoiser(){
-    //TODO
 }
 
 //***********************************************************************************************************************
@@ -97,7 +102,7 @@ bool CudaKSvdDenoiser::internalDenoising(){
 //*********************************************************************************************
 void CudaKSvdDenoiser::createPatches(){
 
-    std::cout<<"Creating Patches"<<std::endl;
+    std::cout<<"Create Patches"<<std::endl;
 
     auto start = std::chrono::steady_clock::now();
 
@@ -130,7 +135,7 @@ void CudaKSvdDenoiser::createPatches(){
     noisePatches->copyOnDevice();
 
     auto end = std::chrono::steady_clock::now();
-    std::cout<<"    # Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;
+    std::cout<<"    # Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()/1000.<<" s"<<std::endl<<std::endl;
 }
 
 //*************************************************************************************************************
@@ -173,54 +178,63 @@ void CudaKSvdDenoiser::updateDictionary(){
     minus<float> binaryOp;
  
     for(int atomIdx = 0 ; atomIdx < sparseCode->m ; atomIdx++){ //->m = # atoms
+        std::cout<<"Atom idx:   "<<atomIdx<<std::endl;
 
         device_vector<int> relevantDataIndices;
-        device_vector<float> selectInput;
-		device_vector<float> selectSparseCode;
-        device_vector<float> error;
         MatrixOps* mult;
         Matrix* dx;
         Matrix* v;
         Matrix* u;
         Matrix* s;
         float bestS;
+        buildSvdContainer();
 
         //Find for each patch relevant atoms --> idx!=0 
 		for(int i = 0; i < sparseCode->n; i++){ //-> n = #NoisePatches
 
-			if(sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx] > 0) 
+			if(sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx] != 0) 
 				relevantDataIndices.push_back(i); 
 		}
 
-        std::cout<<"relevantIndices.size"<<relevantDataIndices.size()<<std::endl;
+        std::cout<<"relevantIndices.size: "<<relevantDataIndices.size()<<std::endl;
 
         //Only update atom shared by 1 or more pacthes
         if(relevantDataIndices.size()<1)
             continue;
 
         //Collect input (patches and coeffs) that used this atom
+        device_vector<float> selectInput;//relevantDataIndices.size() * dim);
+		device_vector<float> selectSparseCode;//relevantDataIndices.size() * sparseCode->m);
+
         for(int inputIdx : relevantDataIndices) {
 			selectInput.insert(selectInput.end(),noisePatches->deviceVector->begin() + inputIdx * dim, noisePatches->deviceVector->begin() + (inputIdx+1) * dim); 
 			selectSparseCode.insert(selectSparseCode.end(),sparseCode->deviceVector->begin() + inputIdx * sparseCode->m, sparseCode->deviceVector->begin() + (inputIdx + 1) * sparseCode->m); 
 		}
 
         //Remove atom from dict --> coef at row atomIdx = 0
-        int nSelectInput = selectInput.size() / dim;
 
-        for(int i = 0; i < nSelectInput; i++)
-            selectSparseCode[i * sparseCode->m + atomIdx] = 0;
+        for(int i = 0; i < relevantDataIndices.size(); i++)
+            selectSparseCode[(i * sparseCode->m) + atomIdx] = 0;
 
-        //DX = Dictionary * selecteSparseCode
+        //DX = Dictionary * selectSparseCode
         mult = MatrixOps::factory(CUBLAS_MULT);
         ((CuBlasMatrixMult*)mult)->setOps(CUBLAS_OP_N, CUBLAS_OP_N);
-        dx = mult->work(dictionary, new Matrix(sparseCode->m ,nSelectInput, sparseCode->m,&selectSparseCode));
+        dx = mult->work(dictionary, new Matrix(sparseCode->m , relevantDataIndices.size(), sparseCode->m, &selectSparseCode));
+
+        std::cout<<"Dopo di moltiplicare"<<std::endl;
 
         //E = coff - dx
+        device_vector<float> error(selectInput.size());
+
         transform(selectInput.begin(), selectInput.end(), dx->deviceVector->begin(), error.begin(), binaryOp);
 
+        std::cout<<"Prima transform andata"<<std::endl;
+
         //Compute SVD on E
-        svdContainer->setMatrix(new Matrix(dim, nSelectInput, dim, &error));
-        device_vector<Matrix*> usvt = svdContainer->getDeviceOutputMatrices();
+        svdContainer->setMatrix(new Matrix(dim, relevantDataIndices.size(), dim, &error));
+        host_vector<Matrix*> usvt = svdContainer->getDeviceOutputMatrices();
+
+        std::cout<<"SvD ANdato"<<std::endl;
         
         //Traspose V
       /*  tras = MatrixOps::factory(CUBLAS_ADD);
@@ -230,6 +244,7 @@ void CudaKSvdDenoiser::updateDictionary(){
         //Replace dictionary column
         u = usvt[0];        
         transform(u->deviceVector->begin(), u->deviceVector->begin() + u->m, u->deviceVector->begin(), _1 * -1.f);
+        std::cout<<"Seconda transform andata"<<std::endl;
         copy(u->deviceVector->begin(), u->deviceVector->begin() + u->m, dictionary->deviceVector->begin() + atomIdx * dim);
 
         //Calculate new coeffs
@@ -237,12 +252,14 @@ void CudaKSvdDenoiser::updateDictionary(){
         v = usvt[2];
         bestS = s->deviceVector->data()[0];
         transform(v->deviceVector->begin(), v->deviceVector->begin() + v->m, v->deviceVector->begin(), _1 * -1.f * bestS);
+        std::cout<<"Terza transform andata"<<std::endl;
 
         for(int i = 0 ; i < relevantDataIndices.size() ; i++ ) {
             int inputIdx = relevantDataIndices[i];
-            sparseCode->deviceVector->data()[inputIdx* sparseCode->m + atomIdx] = v->deviceVector->data()[i] ; 
+            sparseCode->deviceVector->data()[inputIdx * sparseCode->m + atomIdx] = v->deviceVector->data()[i] ; 
          }
-            
+
+        std::cout<<"FIn iter"<<std::endl;        
     }
 }
 
@@ -254,29 +271,28 @@ void CudaKSvdDenoiser::kSvd(){
 
     for(int i = 0 ; i < iter ; i++){
 
-        std::cout<<"Iter: "<<i<<std::endl;
+        std::cout<<"Ksvd-Iter: "<<i+1<<std::endl;
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
 
         CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
-        omp->setLimits(FLT_EPSILON, 5);
         sparseCode = omp->work(noisePatches, dictionary);
-        //std::cout<<"SparseCode size: "<< sparseCode->deviceVector->size()<<std::endl;
+       // std::cout<<"SparseCode size: "<< sparseCode->deviceVector->size()<<std::endl;
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
-        std::cout<<"    OMP Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;
+        std::cout<<"    # OMP Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()/1000.<<" s"<<std::endl;
 
         //Dict update phase
         start = std::chrono::steady_clock::now();
         updateDictionary();
         end = std::chrono::steady_clock::now();
         auto tot2 = end - start;
-        std::cout<<"    Dict update Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot2).count()<<" ms"<<std::endl;
+        std::cout<<"    # Dict update Time Elapsed : "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot2).count()/1000.<<" s"<<std::endl;
 
         delete sparseCode;
         
-        std::cout<<"    Total time: "<<tot1.count() + tot2.count()<<std::endl<<std::endl; 
+        std::cout<<"    # Total time: "<<tot1.count() + tot2.count()<<std::endl<<std::endl; 
     }
 
     //Compute last Iter sparseCode
@@ -285,7 +301,6 @@ void CudaKSvdDenoiser::kSvd(){
     auto start = std::chrono::steady_clock::now();
 
     CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
-    omp->setLimits(FLT_EPSILON, 5);
     sparseCode = omp->work(noisePatches, dictionary);
 
     auto end = std::chrono::steady_clock::now();

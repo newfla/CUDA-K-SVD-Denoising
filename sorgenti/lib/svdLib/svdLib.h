@@ -27,7 +27,7 @@ class svd::SvdContainer{
         ~SvdContainer();
         void setMatrix(baseUtl::Matrix*);
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
-        thrust::device_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
         baseUtl::TimeElapsed* getTimeElapsed();
 
     private:
@@ -48,7 +48,7 @@ class svd::SvdEngine{
         virtual void init(baseUtl::Matrix*) ;
         virtual void work() = 0;
         virtual thrust::host_vector<baseUtl::Matrix*> getOutputMatrices() = 0;
-        virtual thrust::device_vector<baseUtl::Matrix*> getDeviceOutputMatrices() = 0;
+        virtual thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices() = 0;
         SvdEngine();
 
         friend SvdContainer;
@@ -64,8 +64,7 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
         SvdCudaEngine();
         virtual void init(baseUtl::Matrix*);
         virtual thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
-        thrust::device_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
-
+        virtual thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
 };
 
 class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
@@ -75,7 +74,7 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
         void init(baseUtl::Matrix*);
         void work();
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
-        thrust::device_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
 
     private:
         float* deviceRWork = NULL;
@@ -90,7 +89,7 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         void init(baseUtl::Matrix*);
         void work();
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
-        thrust::device_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
 
     private:
         float tolerance;

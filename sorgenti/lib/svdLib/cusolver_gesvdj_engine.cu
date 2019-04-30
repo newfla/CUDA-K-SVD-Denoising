@@ -45,7 +45,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
 void CuSolverGeSvdJ::work(){
 
     //DGESVDJ
-    std::cout<<"stato cuSolver: "<<cusolverDnSgesvdj(
+    cusolverDnSgesvdj(
         cusolverH,
         jobZ,
         econ,
@@ -64,7 +64,7 @@ void CuSolverGeSvdJ::work(){
         gesvdjParams
     );
     cudaDeviceSynchronize();
-    printStat();
+ //   printStat();
 }
 
 //******************************************************************
@@ -82,7 +82,7 @@ thrust::host_vector<Matrix*> CuSolverGeSvdJ::getOutputMatrices(){
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major DEViCE
 //*****************************************************************
-thrust::device_vector<baseUtl::Matrix*> CuSolverGeSvdJ::getDeviceOutputMatrices(){
+thrust::host_vector<baseUtl::Matrix*> CuSolverGeSvdJ::getDeviceOutputMatrices(){
 
     cudaFree(deviceInfo);
     cusolverDnDestroyGesvdjInfo(gesvdjParams);

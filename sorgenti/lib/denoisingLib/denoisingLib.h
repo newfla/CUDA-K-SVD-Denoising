@@ -73,6 +73,7 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         svd::SvdContainer* svdContainer = NULL;
         
         CudaKSvdDenoiser();
+        void buildSvdContainer();
         void createPatches();
         void initDictionary();
         void updateDictionary();
