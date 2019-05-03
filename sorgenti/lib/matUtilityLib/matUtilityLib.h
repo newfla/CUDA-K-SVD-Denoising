@@ -7,6 +7,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
 #include <thrust/functional.h>
+#include <thrust/inner_product.h>
 #include <cublas_v2.h>
 #include <svdLib.h>
 namespace matUtl{
