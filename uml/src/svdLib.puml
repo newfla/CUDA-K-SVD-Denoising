@@ -43,7 +43,7 @@ package svdLib {
         # device_vector<Matrix*> getDeviceOutputMatrices()
     }
 
-    class CuSolverGeSvdJ{
+    class CuSolverGeSvdj{
 
         - float tolerance
         - int maxSweeps
@@ -73,7 +73,7 @@ package svdLib {
     'SvdEngine -> "*" Matrix
     SvdEngine -> "1" SvdEngineType
     SvdEngine <|-- SvdCudaEngine : extends
-    SvdCudaEngine <|-- CuSolverGeSvdJ : extends
+    SvdCudaEngine <|-- CuSolverGeSvdj : extends
     SvdCudaEngine <|-- CuSolverGeSvd : extends
 
     hide SvdEngineType methods
@@ -81,7 +81,7 @@ package svdLib {
     hide SvdEngine fields
 }
 
-package utilityLib{
+package baseUilityLib{
     class Matrix
     class TimeElapsed
 

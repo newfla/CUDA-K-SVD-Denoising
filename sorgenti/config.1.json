@@ -12,6 +12,7 @@
     },
     
     "files": [
-        {"name" : "barbara.png"}
+        {"name" : "barbara.png",
+         "ref" : "barbaraRef.png"}
     ]
   }

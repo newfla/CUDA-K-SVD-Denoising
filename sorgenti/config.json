@@ -1,17 +1,18 @@
 {
     "inputFolder" : "/home/fbizzarri/prova/img/input",
     
-    "outputFolder" : "/home/fbizzarri/prova/img/input",
+    "outputFolder" : "/home/fbizzarri/prova/img/output",
     
     "globalParams" : {
         "patchSquareDim" : 8,
         "slidingPatch" : 2,
         "atoms" : 256,
-        "iter" : 10,
+        "iter" : 1,
         "sigma" : 25
     },
     
     "files": [
-        {"name" : "barbara.png"}
+        {"name" : "barbara.png",
+         "ref" : "barbaraRef.png"}
     ]
   }

@@ -32,12 +32,20 @@ host_vector<baseUtl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 
     for(int i = 1; i < times.size(); i++)
     {
-        times[0]->init += times[1]->init;
-        times[0]->working += times[1]->working;
-        times[0]->finalize += times[1]->finalize;
+        times[0]->init += times[i]->init;
+        times[0]->working += times[i]->working;
+        times[0]->finalize += times[i]->finalize;
     }
     
     return times;
+}
+
+//************************************************************************************************
+//  Obtain PSNR stats
+//  output:  + psnr (host_vector<host_vector<double>*>) PSNR before/after denoising foreach image
+//***********************************************************************************************
+thrust::host_vector<thrust::host_vector<double>*> BatchDenoiser::getPsnr(){
+    return psnrs;
 }
 
 //***************************************************************************************************************************************************
@@ -65,13 +73,12 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     
     Object config, globalParams, file;
     Array files;
-    DIR *dir;
-    struct dirent *ent;
 
-    std::string fileName, inputFolder, outputFolder;
+    std::string fileName, inputFolder, outputFolder, refFile;
     std::vector<std::string> skip ={"..", "."};
-    int globalPatchSquareDim, globalSlidingPatch, globalAtoms, globalIter, globalSigma;
-    int patchSquareDim, slidingPatch, atoms, iter, sigma;
+    int globalPatchSquareDim, globalSlidingPatch, globalAtoms, globalIter;
+    float globalSigma, sigma;
+    int patchSquareDim, slidingPatch, atoms, iter;
     std::fstream streamJson(jsonFile);
 
     config.parse(streamJson);
@@ -84,7 +91,7 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     globalSlidingPatch = (int) globalParams.get<Number> ("slidingPatch");
     globalAtoms = (int) globalParams.get<Number> ("atoms");
     globalIter = (int) globalParams.get<Number> ("iter");
-    globalSigma = (int) globalParams.get<Number> ("sigma");
+    globalSigma = (float) globalParams.get<Number> ("sigma");
 
     BatchDenoiser* batchDenoiser = new BatchDenoiser();
     batchDenoiser->times.push_back(new TimeElapsed());
@@ -96,13 +103,15 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         slidingPatch = (int) file.get<Number> ("slidingPatch", globalSlidingPatch);
         atoms = (int) file.get<Number> ("atoms", globalAtoms);
         iter = (int) file.get<Number> ("iter", globalIter);
-        sigma = (int) file.get<Number> ("sigma", globalSigma);
+        sigma = (float) file.get<Number> ("sigma", globalSigma);
         fileName = (std::string) file.get<std::string>("name");
+        refFile = (std::string) file.get<std::string>("ref");
         
-        Denoiser* denoiser = Denoiser::factory(type, inputFolder +"/"+ fileName, outputFolder +"/"+ fileName);
+        Denoiser* denoiser = Denoiser::factory(type, inputFolder + "/" + fileName, outputFolder + "/" + fileName);
         
         denoiser->patchSquareDim = patchSquareDim;
         denoiser->slidingPatch = slidingPatch;
+        denoiser->refImage = inputFolder + "/" + refFile;
     
         CudaKSvdDenoiser* cudaDenoiser = (CudaKSvdDenoiser*) denoiser;
         cudaDenoiser->atoms = atoms;
@@ -110,7 +119,9 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         cudaDenoiser->sigma = sigma;
         
         batchDenoiser->denoisers.push_back(denoiser);
-        batchDenoiser->times.push_back(denoiser->getTimeElapsed());   
+        batchDenoiser->times.push_back(denoiser->getTimeElapsed());
+        batchDenoiser->psnrs.push_back(denoiser->getPsnr());
+         
     }
 
     streamJson.close();

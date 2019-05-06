@@ -28,13 +28,16 @@ class denoising::Denoiser{
         static Denoiser* factory(DenoiserType, std::string, std::string);
         virtual signed char denoising() = 0;
         baseUtl::TimeElapsed* getTimeElapsed();
+        thrust::host_vector<double>* getPsnr();
 
     protected:
         int patchSquareDim = 8;
         int slidingPatch = 2;
+        std::string refImage;
         baseUtl::Matrix* inputMatrix = NULL;
         baseUtl::Matrix* outputMatrix = NULL;
         baseUtl::TimeElapsed* timeElapsed = NULL;
+        thrust::host_vector<double> * psnr = NULL;
         
         Denoiser();
         virtual bool loadImage();
@@ -59,7 +62,7 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
     protected:
         int atoms = 256;
         int iter = 10;
-        int sigma = 25;
+        float sigma = 25;
 
         bool loadImage();
         bool saveImage();
@@ -89,12 +92,14 @@ class denoising::BatchDenoiser{
     public:
         ~BatchDenoiser();
         thrust::host_vector<baseUtl::TimeElapsed*> getTimeElapsed();
+        thrust::host_vector<thrust::host_vector<double>*> getPsnr(); 
         thrust::host_vector<signed char> seqBatchDenoising();
         static BatchDenoiser* factory(DenoiserType, std::string);
 
 
     protected:
         thrust::host_vector<baseUtl::TimeElapsed*> times;
+        thrust::host_vector<thrust::host_vector<double>*> psnrs;
         thrust::host_vector<Denoiser*> denoisers;
 
     private:
@@ -143,6 +148,5 @@ struct myPlus
   __thrust_exec_check_disable__
   __host__ __device__ T operator()(const T &lhs, const T &rhs) const {return lhs + rhs;}
 }; // end plus
-
 
 #endif

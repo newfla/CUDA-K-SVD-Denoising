@@ -58,9 +58,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     init();
 
     auto start = std::chrono::steady_clock::now();
-
-    float* noisePatches = raw_pointer_cast(patchesMatrix->deviceVector->data());
-    float* dictionary = raw_pointer_cast(dictionaryMatrix->deviceVector->data());
+    
     float norm = 0;
     int max = 0, min = 0, chosenAtomIdx = 0;
 
@@ -71,7 +69,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         
         device_vector<float> tempVec(dictionaryMatrix->m,0);
         device_vector<float> thisSparseCode(dictionaryMatrix->n,0);
-        host_vector<int> chosenAtomIdxList;
+        device_vector<int> chosenAtomIdxList;
 		device_vector<float> chosenAtomList; 
         int iter = 0;
         
@@ -84,7 +82,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                         dictionaryMatrix->m,
                         dictionaryMatrix->n,
                         &alfa,
-                        dictionary,
+                        raw_pointer_cast(dictionaryMatrix->deviceVector->data()),
                         dictionaryMatrix->ld,
                         raw_pointer_cast(residualVec.data()),
                         1,
@@ -237,7 +235,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                 }
                             
             }
-            
+
             transform(patchesMatrix->deviceVector->begin() + (inputIdx * patchesMatrix->m),
                       patchesMatrix->deviceVector->begin() + ((inputIdx+1) * patchesMatrix->m),
                       tempVec.begin(),
@@ -262,7 +260,17 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         }
         sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
     }
-
+    /*int x=0, y=0;
+    for(int i = 0; i < sparseCode->size(); i++)
+    {
+        if(sparseCode->data()[i]==0)
+            x++;
+        else 
+            y++;
+    }
+    std::cout<<"nulli: "<<x<<" non nulli: "<<y<<std::endl;
+    std::cin.get();*/
+    
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 

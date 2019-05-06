@@ -34,7 +34,7 @@ void CuBlasMatrixMult::finalize(){
 
     auto start = std::chrono::steady_clock::now();
 
-    c = new Matrix(a->m, b->n, b->n, cVector);
+    c = new Matrix(a->m, b->n, a->m, cVector);
     cublasDestroy(handle);
 
     auto end = std::chrono::steady_clock::now();
@@ -52,10 +52,10 @@ void CuBlasMatrixMult::setOps(cublasOperation_t op1, cublasOperation_t op2){
     this->op2 = op2;
 }
 
-//*******************
+//*****************************************
 // CuBlas Sgemm call
 // output = alfa*op( A )*op( B ) + beta*C,
-//******************
+//****************************************
 baseUtl::Matrix* CuBlasMatrixMult::work(Matrix* a, Matrix* b){
 
     this->a = a;
@@ -82,7 +82,7 @@ baseUtl::Matrix* CuBlasMatrixMult::work(Matrix* a, Matrix* b){
                 b->ld,
                 &beta,
                 pointerC,
-                b->ld);
+                a->ld);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();

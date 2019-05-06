@@ -1,12 +1,21 @@
 %/DORA SECTION
 
-RGB_Dora = imread('dora.jpg');
-BW_Dora = rgb2gray(RGB_Dora);
+CLEAN = imread('barbara160.png');
 
-RI_Dora = imref2d(size(BW_Dora));
+NOISED = imread('barbara.png');
 
+temp=double(NOISED);
 
+var(temp(:))
 
-Dora_Image = figure('Name','Dora B&W','NumberTitle','off');
-imshow(imnoise(BW_Dora, 'gaussian',0.,.5), RI_Dora);
+%/BW = rgb2gray(RGB);
 
+%/RI = imref2d(size(RGB));
+
+%/Image = figure('Name','B&W','NumberTitle','off');
+%/imshow(imnoise(RGB, 'gaussian',0.,.0025), RI);
+
+%/NOISED2 = imnoise(CLEAN, 'gaussian',0.,25);
+NOISED2 = temp + 0.0025*randn(size(temp));
+ssim(NOISED2, double(NOISED))
+imshow(NOISED2);

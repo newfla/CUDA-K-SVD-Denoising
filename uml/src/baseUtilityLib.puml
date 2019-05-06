@@ -1,0 +1,32 @@
+@startuml BaseUtilityDiagram
+
+package utilityLib{
+
+    class Matrix{
+        + int m
+        + int n
+        + int ld
+        + host_vector* hostVector
+        + device_vector* deviceVector
+        
+        + Matrix(int, int, int, float*)
+        + Matrix(int, int, int, thrust::host_vector<float>*)
+        + Matrix(int, int, int, thrust::device_vector<float>*)
+        + Matrix* cloneHost()
+        + copyOnDevice()
+        + copyOnHost()
+        {static} + Matrix* randomMatrixHost(int m, int n, int ld)
+    }
+
+    class TimeElapsed{
+        + int init
+        + int working
+        + int finalize
+        + int getTotalTime()
+    }
+
+    note right: Time in milliseconds
+
+    
+
+@enduml

@@ -10,6 +10,7 @@
 #include <thrust/inner_product.h>
 #include <cublas_v2.h>
 #include <svdLib.h>
+
 namespace matUtl{
 
     //Class section
@@ -91,7 +92,6 @@ class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         baseUtl::Matrix* work2(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        void setLimits(float, int);
 
     protected:
         CuBlasMatrixOmp();

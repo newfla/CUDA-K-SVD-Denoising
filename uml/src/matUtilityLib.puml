@@ -1,30 +1,8 @@
-@startuml UtilityDiagram
+@startuml MatUtilityDiagram
 
-package utilityLib{
+package matutilityLib{
 
-    class Matrix{
-        + int m
-        + int n
-        + int ld
-        + host_vector* hostVector
-        + device_vector* deviceVector
-        
-        + Matrix* cloneHost()
-        + copyOnDevice()
-        + copyOnHost()
-        {static} + Matrix* randomMatrixHost(int m, int n, int ld)
-    }
-
-    class TimeElapsed{
-        + int init
-        + int working
-        + int finalize
-        + int getTotalTime()
-    }
-
-    note right: Time in milliseconds
-
-    enum MatrixOmpType{
+    enum MatrixOpsType{
             CUBLAS_MULT
             CUBLAS_ADD
             CUBLAS_OMP
@@ -39,8 +17,8 @@ package utilityLib{
         {abstract} # finalize()
         {abstract} + work(Matrix* a , Matrix* b)
         {abstract} + TimeElapsed* getTimeElapsed()
-        + setCoff(int alfa, int beta)
-        {static} + MatrixMult* factory(MatrixMultType, Matrix*, Matrix* ,int , int)
+        + setCoff(float, float)
+        {static} + MatrixMult* factory(MatrixOpsType)
     }
 
     class CuBlasMatrixMult{
@@ -80,15 +58,26 @@ package utilityLib{
         + work(Matrix* a , Matrix* b)
         + setLimits(float epsilon, int maxIters)
     }
-
-    MatrixOps --> "*" Matrix
-    MatrixOps --> "1" TimeElapsed
-    MatrixOps -> "1" MatrixOmpType 
+    MatrixOps -> "1" MatrixOpsType 
     CuBlasMatrixMult --|> MatrixOps : extends
     CuBlasMatrixAdd --|> MatrixOps : extends
     CuBlasMatrixOmp --|> MatrixOps : extends
 
-    hide MatrixOmpType methods 
+    hide MatrixOpsType methods 
 }
+
+package baseUtilityLib{
+    class Matrix
+    class TimeElapsed
+
+    hide Matrix fields
+    hide Matrix methods
+
+    hide TimeElapsed fields
+    hide TimeElapsed methods
+}
+
+MatrixOps --> "*" Matrix
+MatrixOps --> "1" TimeElapsed
 
 @enduml

@@ -3,11 +3,13 @@
 using namespace denoising;
 using namespace svd;
 using namespace baseUtl;
+using namespace thrust;
 using namespace cimg_library;
 
 Denoiser::Denoiser(){
 
     timeElapsed = new TimeElapsed();
+    psnr = new host_vector<double>(2);
 }
 //**************
 //  Destructor
@@ -22,6 +24,9 @@ Denoiser::~Denoiser(){
 
     if(timeElapsed!=NULL)
         delete timeElapsed;
+
+    if(psnr!=NULL)
+        delete psnr;
 }
 
 //**************************
@@ -50,21 +55,12 @@ bool Denoiser::loadImage(){
 //  output:  + staus (bool)
 //*************************
 bool Denoiser::saveImage(){
-
     auto start = std::chrono::steady_clock::now();
+  
+    CImg<float> image(outputMatrix->n, outputMatrix->ld);   
 
-    //TODO da rimuovere
-    outputMatrix = inputMatrix;
-
-    CImg<float> image(outputMatrix->n, outputMatrix->ld);
-
-    //TODO in realtà sarebbe deviceVector
     image._data = outputMatrix->hostVector->data();
-
-    //TODO da rimuovere
-    image._is_shared = true;
-
-    image.normalize(0,255);
+    image.normalize(0.,255.);
 
     try{
         image.save(outputFile.c_str());
@@ -72,6 +68,10 @@ bool Denoiser::saveImage(){
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    CImg<float> ref(refImage.c_str()), old(inputFile.c_str());
+    psnr->data()[0] = ref.PSNR(old);
+    psnr->data()[1] = ref.PSNR(image);
 
     return true;
 }
@@ -105,6 +105,18 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
     return denoiser;
 }
 
+//**********************************************************
+//  Obtain time stats
+//  output:  + timer (TimeElapsed*) ms timers foreach phase
+//*********************************************************
 baseUtl::TimeElapsed* Denoiser::getTimeElapsed(){
     return timeElapsed;
+}
+
+//***************************************************************************
+//  Obtain PSNR stats
+//  output:  + psnr (host_vector<double>*) PSNR before/after denoising image
+//**************************************************************************
+host_vector<double>* Denoiser::getPsnr(){
+    return psnr;
 }

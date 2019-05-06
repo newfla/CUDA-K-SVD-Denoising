@@ -13,13 +13,16 @@ package denoisingLib{
         - CImg<float>* inputImage
         # int patchSquareDim
         # int slidingPatch
+        # String refImage
+        # host_vector<double> * psnr
 
         {abstract} # bool loadImage()
         {abstract} # bool saveImage()
         {abstract} # bool internalDenoising()
         {abstract} + signed char denoising()
         + TimeElapsed* getTimeElapsed()
-        {static} + Denoiser* factory (DenoiserType, String input, String output)
+        + host_vector<double>* getPsnr()
+        {static} + Denoiser* factory (DenoiserType, String, String)
     }
 
     note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
@@ -29,6 +32,7 @@ package denoisingLib{
         # int iter
         # int sigma
 
+        - buildSvdContainer()
         - createPatch()
         - initDictionary()
         - updateDictionary()
@@ -43,8 +47,9 @@ package denoisingLib{
 
     class BatchDenoiser{
         + host_vector<TimeElapsed*> getTimeElapsed() 
+        + host_vector<host_vector<double>*> getPsnr()
         + host_vector<signed char> seqBatchDenoising()
-        {static} + BatchDenoiser* factory (DenoiserType type, String jsonConfig)
+        {static} + BatchDenoiser* factory (DenoiserType type, String)
     }
 
     note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 
@@ -61,8 +66,7 @@ package denoisingLib{
 package utilityLib{
     class Matrix
     class TimeElapsed
-    class Matrix
-    abstract class MatrixOps
+    
 
     hide Matrix fields
     hide Matrix methods
@@ -70,6 +74,10 @@ package utilityLib{
     hide TimeElapsed fields
     hide TimeElapsed methods
 
+}
+
+package matUtilityLib{
+    abstract class MatrixOps
     hide MatrixOps fields
     hide MatrixOps methods
 }

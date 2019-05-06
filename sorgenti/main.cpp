@@ -60,6 +60,8 @@ void testBatchDenoiser(){
 
     host_vector<baseUtl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
 
+    host_vector<host_vector<double>*> psnr = batchDenoiser->getPsnr(); 
+
     double init = times[0]->init, work = times[0]->working, fin = times[0]->finalize, tot = times[0]->getTotalTime();
 
     init/=1000.;
@@ -67,10 +69,10 @@ void testBatchDenoiser(){
     fin/=1000.;
     tot/=1000.;
 
-    std::cout<<std::endl<<"# Total execution time: "<<tot<<" s"<<std::endl;
-    std::cout<<"    Total init time: "<<init<<" s"<<std::endl;
-    std::cout<<"    Total working time: "<<work<<" s"<<std::endl;
-    std::cout<<"    Total finalize time: "<<fin<<" s"<<std::endl;
+    std::cout<<std::endl<<"# Total Batch execution time: "<<tot<<" s"<<std::endl;
+    std::cout<<"    Total Batch init time: "<<init<<" s"<<std::endl;
+    std::cout<<"    Total Batch working time: "<<work<<" s"<<std::endl;
+    std::cout<<"    Total Batch finalize time: "<<fin<<" s"<<std::endl;
 
     for(int i = 1; i < times.size(); i++)
     {
@@ -86,7 +88,8 @@ void testBatchDenoiser(){
         std::cout<<"    init time: "<<init<<" ms"<<std::endl;
         std::cout<<"    working time: "<<work<<" s"<<std::endl;
         std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;
-        
+        std::cout<<"    PSNR before:"<<psnr[i-1]->data()[0]<<std::endl;
+        std::cout<<"    PSNR after:"<<psnr[i-1]->data()[1]<<std::endl;        
     }
     
 
@@ -116,6 +119,11 @@ int main(int argc, char *argv[]) {
     */
 
    testBatchDenoiser();
+
+    /*CImg<float> ref("../../img/input/barbaraRef.png"),
+        noise("../../img/input/barbara.png");
+
+    std::cout<<"PSNR"<<ref.PSNR(noise);*/
    
     return 0;
 }
