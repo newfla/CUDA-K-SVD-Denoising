@@ -106,47 +106,4 @@ class denoising::BatchDenoiser{
         BatchDenoiser();
 };
 
-template<typename T>
-struct mySquare
-{
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  typedef T argument_type;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  typedef T result_type;
-
-  /*! Function call operator. The return value is <tt>x*x</tt>.
-   */
-  __thrust_exec_check_disable__
-  __host__ __device__ T operator()(const T &x) const {return x*x;}
-}; // end square
-
-template<typename T>
-struct myPlus
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  typedef T first_argument_type;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   */
-  typedef T second_argument_type;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  typedef T result_type;
-
-  /*! Function call operator. The return value is <tt>lhs + rhs</tt>.
-   */
-  __thrust_exec_check_disable__
-  __host__ __device__ T operator()(const T &lhs, const T &rhs) const {return lhs + rhs;}
-}; // end plus
-
 #endif

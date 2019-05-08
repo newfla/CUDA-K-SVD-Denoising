@@ -109,6 +109,7 @@ void CudaKSvdDenoiser::createPatches(){
     std::swap(inputMatrix->m, inputMatrix->n);
     inputMatrix->ld = inputMatrix->m;
     Matrix* v = tras->work(inputMatrix, inputMatrix);
+
     delete inputMatrix;
     inputMatrix = v;
 
@@ -134,8 +135,6 @@ void CudaKSvdDenoiser::createPatches(){
     
     std::cout<<"    # Patches: "<<j<<"  Dim: "<<i<<std::endl;
 
-   // delete inputMatrix->deviceVector;
-    //inputMatrix->deviceVector = NULL;
     std::swap(inputMatrix->m, inputMatrix->n);
     inputMatrix->ld = inputMatrix->m;
 
@@ -162,14 +161,13 @@ void CudaKSvdDenoiser::initDictionary(){
         dict->insert(dict->end(), noisePatches->deviceVector->begin() + (i * dim), noisePatches->deviceVector->begin() + ((i + 1) * dim));
 
         //Calculate norm
-        float norm = sqrtf(transform_reduce(dict->begin() + (i * dim), dict->begin() + ((i+1) * dim), mySquare<float>(), 0, myPlus<float>()));
+        float norm = sqrtf(transform_reduce(dict->begin() + (i * dim), dict->begin() + ((i+1) * dim), square<float>(), 0, plus<float>()));//mySquare<float>(), 0, myPlus<float>()));
 
         //Normalize vector
         transform(dict->begin() + (i * dim), dict->begin() + ((i + 1) * dim), dict->begin() + (i * dim), _1/norm);
     }
 
     dictionary = new Matrix(dim, atoms, dim, dict);
-    //std::cout<<dict->size();
 
     auto end = std::chrono::steady_clock::now();
     std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;

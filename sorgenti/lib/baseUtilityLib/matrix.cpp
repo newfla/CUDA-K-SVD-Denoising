@@ -56,6 +56,9 @@ Matrix::~Matrix(){
 
   if(hostVector != NULL)
     delete hostVector;
+
+  if(deviceVector != NULL)
+    delete deviceVector;
 }
 
 //***********************************************

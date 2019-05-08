@@ -12,9 +12,11 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     project(denoising VERSION 0.1.0)
 
-    find_package(CUDA 9.1 QUIET REQUIRED)
+    find_package(CUDA 10.1 QUIET REQUIRED)
 
     set(CMAKE_CXX_FLAGS "-std=c++11")
+
+    add_compile_options(-g)
 
     set(CUDA_64_BIT_DEVICE_CODE ON)
    
