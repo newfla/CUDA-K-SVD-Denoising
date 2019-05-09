@@ -15,17 +15,16 @@ CudaKSvdDenoiser::~CudaKSvdDenoiser(){}
 //**************************
 //  Istantiate SvdCOntainer
 //*************************
-void CudaKSvdDenoiser::buildSvdContainer(){
+SvdContainer* CudaKSvdDenoiser::buildSvdContainer(){
+    
     switch (type)
         {
             case CUDA_K_GESVD:
-                svdContainer = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVD));
-                break;
+                return new SvdContainer(SvdEngine::factory(CUSOLVER_GESVD));
 
             default:
             case CUDA_K_GESVDJ:
-                svdContainer = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
-                break;
+                return new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
          
         }
 }
@@ -119,13 +118,10 @@ void CudaKSvdDenoiser::createPatches(){
 
         for(j = 0; j + patchSquareDim <= inputMatrix->m; j+= slidingPatch){ // m = ImageHeight
 
-            device_vector<float> patch;
             int startPatch = (i * inputMatrix->m) + j;
 
             for(int k = startPatch; k < startPatch + patchSquareDim * inputMatrix->m; k += inputMatrix->m)
-                patch.insert(patch.end(), inputMatrix->deviceVector->begin() + k, inputMatrix->deviceVector->begin() + k + patchSquareDim);
-
-            patches->insert(patches->end(), patch.begin(), patch.end()); 
+               patches->insert(patches->end(), inputMatrix->deviceVector->begin() + k, inputMatrix->deviceVector->begin() + k + patchSquareDim);
         }  
     }
 
@@ -152,16 +148,13 @@ void CudaKSvdDenoiser::initDictionary(){
 
     auto start = std::chrono::steady_clock::now();
     int dim = patchSquareDim * patchSquareDim;
-    device_vector<float> * dict = new device_vector<float>();
+    device_vector<float> * dict = new device_vector<float>(noisePatches->deviceVector->begin(), noisePatches->deviceVector->begin() + dim * atoms);
 
-    //Copy Patches and normalization using norm2
+    //Normalize patches using norm2
     for (int i = 0; i < atoms; i++){
-        
-        //Copy a single patch
-        dict->insert(dict->end(), noisePatches->deviceVector->begin() + (i * dim), noisePatches->deviceVector->begin() + ((i + 1) * dim));
 
         //Calculate norm
-        float norm = sqrtf(transform_reduce(dict->begin() + (i * dim), dict->begin() + ((i+1) * dim), square<float>(), 0, plus<float>()));//mySquare<float>(), 0, myPlus<float>()));
+        float norm = sqrtf(transform_reduce(dict->begin() + (i * dim), dict->begin() + ((i+1) * dim), square<float>(), 0, plus<float>()));
 
         //Normalize vector
         transform(dict->begin() + (i * dim), dict->begin() + ((i + 1) * dim), dict->begin() + (i * dim), _1/norm);
@@ -190,14 +183,11 @@ void CudaKSvdDenoiser::updateDictionary(){
         buildSvdContainer();
 
         //Find for each patch relevant atoms --> idx!=0 
-		for(int i = 0; i < sparseCode->n; i++){ //-> n = #NoisePatches
+        for(int i = 0; i < sparseCode->n; i++){ //-> n = #NoisePatches
 
 			if(sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx] != 0) 
 				relevantDataIndices.push_back(i); 
-               // std::cout<<sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx]<<std::endl;
 		}
-		//std::cout<<"atomidx: "<<atomIdx<<std::endl;
-		//std::cout<<"relevantIndices.size: "<<relevantDataIndices.size()<<std::endl;
 
         //Only update atom shared by 1 or more patches
         if(relevantDataIndices.size()<1)
@@ -213,9 +203,12 @@ void CudaKSvdDenoiser::updateDictionary(){
 		}
 
         //Remove atom from dict --> coef at row atomIdx = 0
-
-        for(int i = 0; i < relevantDataIndices.size(); i++)
-            selectSparseCode[(i * sparseCode->m) + atomIdx] = 0;
+        device_vector<int> idxSeq(relevantDataIndices.size());
+        sequence(idxSeq.begin(), idxSeq.end(), atomIdx, sparseCode->m);
+        transform(make_permutation_iterator(selectSparseCode.begin(), idxSeq.begin()),
+                  make_permutation_iterator(selectSparseCode.end(), idxSeq.end()),
+                  make_permutation_iterator(selectSparseCode.begin(), idxSeq.begin()),
+                  _1 = 0.);
 
         //DX = Dictionary * selectSparseCode
         mult = MatrixOps::factory(CUBLAS_MULT);
@@ -226,10 +219,10 @@ void CudaKSvdDenoiser::updateDictionary(){
         transform(selectInput.begin(), selectInput.end(), dx->deviceVector->begin(),dx->deviceVector->begin(), minus<float>());
 
         //Compute SVD on E
+        SvdContainer* svdContainer= buildSvdContainer();
         svdContainer->setMatrix(dx);
         host_vector<Matrix*> usv = svdContainer->getDeviceOutputMatrices();
         
-
         //Traspose V
         if(type == CUDA_K_GESVD){
             MatrixOps* tras = MatrixOps::factory(CUBLAS_ADD);
@@ -248,21 +241,19 @@ void CudaKSvdDenoiser::updateDictionary(){
 
         //Calculate new coeffs
         s = usv[1];
-        /*for(int i = 0 ; i < v->m; i++)
-            std::cout<<v->deviceVector->data()[i]<<std::endl;*/
         transform(v->deviceVector->begin(), v->deviceVector->begin() + v->m, v->deviceVector->begin(), -1.f * s->deviceVector->data()[0] * _1);
 
         for(int i = 0 ; i < relevantDataIndices.size() ; i++ ) {
             int inputIdx = relevantDataIndices[i];
             sparseCode->deviceVector->data()[(inputIdx * sparseCode->m) + atomIdx] = v->deviceVector->data()[i] ; 
-            //std::cout<<"Sparse["<<i<<"]= "<<sparseCode->deviceVector->data()[(inputIdx * sparseCode->m) + atomIdx]<<std::endl;
         }
-        /*for(int i =0; i< dictionary->m; i++)
-            std::cout<<"Dict["<<i<<"] = "<<dictionary->deviceVector->data()[(atomIdx * dictionary->m)+i]<<std::endl;*/
-      
-        delete u;
-        delete s;
-        delete v;        
+       /* transform(relevantDataIndices.begin(),relevantDataIndices.end(), idxSeq.begin(), atomIdx + (_1 * sparseCode->m));
+        transform(v->deviceVector->begin(),
+                  v->deviceVector->begin() + v->m,
+                  sparseCode->deviceVector->begin(),//make_permutation_iterator(sparseCode->deviceVector->begin(), idxSeq.begin()),
+                  -1.f * s->deviceVector->data()[0] *_1);*/
+
+        delete svdContainer;   
     }
 }
 
@@ -278,24 +269,26 @@ void CudaKSvdDenoiser::kSvd(){
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
-
+        size_t freeMem, totalMem;
+        cudaMemGetInfo(&freeMem, &totalMem);
+        std::cout << totalMem << ", " << freeMem << std::endl;
         CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
         sparseCode = omp->work(noisePatches, dictionary);
-       // std::cout<<"SparseCode size: "<< sparseCode->deviceVector->size()<<std::endl;
+
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
         std::cout<<"    # OMP Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl;
 
         //Dict update phase
         start = std::chrono::steady_clock::now();
-        updateDictionary();
+        //updateDictionary();
         end = std::chrono::steady_clock::now();
         auto tot2 = end - start;
         std::cout<<"    # Dict update Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot2).count()<<" s"<<std::endl;
 
         delete sparseCode;
         
-    std::cout<<"    # Total Time: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1 + tot2).count()<<" s"<<std::endl<<std::endl;
+        std::cout<<"    # Total Time: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1 + tot2).count()<<" s"<<std::endl<<std::endl;
     }
 
     auto start = std::chrono::steady_clock::now();
@@ -311,42 +304,15 @@ void CudaKSvdDenoiser::kSvd(){
 
 void CudaKSvdDenoiser::createImage(){
 
-    //Build deNoised Patches
+    //Build deNoised Patches/Images
     delete noisePatches;
-    
+
+    std::cout<<"Build image denoised"<<std::endl;
     auto start = std::chrono::steady_clock::now();
-
-    std::cout<<"Matrix mult between Dict and sparseCode"<<std::endl;
-
-    /*for(int i = 0; i < dictionary->deviceVector->size(); i++)
-        std::cout<<"dict i: "<<i<<" val: "<<dictionary->deviceVector->data()[i]<<std::endl;
-
-    std::cin.get();
-
-    for(int i = 0; i < sparseCode->deviceVector->size(); i++)
-        std::cout<<"sparse i: "<<i<<" val: "<<sparseCode->deviceVector->data()[i]<<std::endl;
-    
-    std::cin.get();*/
 
     CuBlasMatrixMult* mult= (CuBlasMatrixMult*) MatrixOps::factory(CUBLAS_MULT);
     mult->setOps(CUBLAS_OP_N, CUBLAS_OP_N);
-    noisePatches = mult->work(dictionary, sparseCode);
-
-    /*for(int i = 0; i < noisePatches->deviceVector->size(); i++)
-        std::cout<<"img i: "<<i<<" val: "<<noisePatches->deviceVector->data()[i]<<std::endl;
-
-    std::cin.get();*/
-
-
-    auto end = std::chrono::steady_clock::now();
-    auto tot1 = end - start;
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl<<std::endl;
-
-
-    //Build DenoisedImage
-    start = std::chrono::steady_clock::now();
-
-    std::cout<<"Build image denoised"<<std::endl;
+    noisePatches = mult->work(dictionary, sparseCode);    
 
     device_vector<float>* img = new device_vector<float>(inputMatrix->m * inputMatrix->n,0);
     device_vector<float> blockWeight(dictionary->m,1);
@@ -359,8 +325,6 @@ void CudaKSvdDenoiser::createImage(){
 
             int startPatchIdx = (i*inputMatrix->m) + j;
             int colIdx = 0;
-
-           // device_vector<float> thisPatch(noisePatches->deviceVector->begin() + (patchIdx*dictionary->m), noisePatches->deviceVector->begin() + ((patchIdx + 1)*dictionary->m)); 
 
             for(int k = startPatchIdx; k < startPatchIdx + patchSquareDim*inputMatrix->m; k += inputMatrix->m){
 
@@ -380,11 +344,6 @@ void CudaKSvdDenoiser::createImage(){
             patchIdx++;
         }
     }
-    /*for(int i = 0; i < imgWeight.size(); i++)
-      std::cout<<"imgWeight i:"<<i<<" val: "<<imgWeight[i]<<std::endl;
-std::cin.get();
-   for(int i = 0; i < img->size(); i++)
-      std::cout<<"img i:"<<i<<" val: "<<img->data()[i]<<std::endl;*/
 
     transform(inputMatrix->deviceVector->begin(),
               inputMatrix->deviceVector->end(),
@@ -398,9 +357,6 @@ std::cin.get();
               img->begin(),
               _1 / (1. + 0.034 * sigma *_2));
 
-   // for(int i = 0; i < img->size(); i++)
-    //  std::cout<<"img i:"<<i<<" val: "<<img->data()[i]<<std::endl;
-
     outputMatrix = new Matrix(inputMatrix->m, inputMatrix->n, inputMatrix->m, img);
 
     CuBlasMatrixAdd* tras = (CuBlasMatrixAdd*) MatrixOps::factory(CUBLAS_ADD);
@@ -410,13 +366,13 @@ std::cin.get();
     Matrix* trs = tras->work(outputMatrix, outputMatrix);
 
     delete outputMatrix;
+    delete tras;
     outputMatrix = trs;
     outputMatrix->copyOnHost();
- //   for(int i=0; i<outputMatrix->deviceVector->size(); i++)
-  //    std::cout<<"i: "<<i<<" val: "<<outputMatrix->deviceVector->data()[i]<<std::endl;
-    end = std::chrono::steady_clock::now();
-    tot1 = end - start;
+ 
+    auto end = std::chrono::steady_clock::now();
+    auto tot1 = end - start;
 
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl;
+    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl;
 
 }

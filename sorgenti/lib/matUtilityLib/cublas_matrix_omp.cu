@@ -23,7 +23,7 @@ void CuBlasMatrixOmp::init(){
     if(b->deviceVector == NULL)
         b->copyOnDevice();
 
-    sparseCode = new device_vector<float>(b->n * a->n);
+    sparseCode = new device_vector<float>(b->n * a->n,0);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -54,8 +54,8 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
     this->b = patchesMatrix;
     this->a = dictionaryMatrix;
-
     init();
+    
 
     auto start = std::chrono::steady_clock::now();
     
@@ -67,15 +67,15 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         device_vector<float> residualVec(patchesMatrix->deviceVector->begin() + (inputIdx * patchesMatrix->m),
                                      patchesMatrix->deviceVector->begin() + ((inputIdx+1) * patchesMatrix->m));
         
-        device_vector<float> tempVec(dictionaryMatrix->m);//,0);
-        device_vector<float> thisSparseCode(dictionaryMatrix->n);//,0);
+        device_vector<float> tempVec(dictionaryMatrix->m);
+        device_vector<float> thisSparseCode(dictionaryMatrix->n);
         device_vector<int> chosenAtomIdxList;
 		device_vector<float> chosenAtomList; 
         int iter = 0;
         
         while(iter < maxIters){
         
-            device_vector<float> proj(dictionaryMatrix->n);//,0);
+            device_vector<float> proj(dictionaryMatrix->n);
 
             cublasSgemv(handle,
                         CUBLAS_OP_T,
@@ -103,11 +103,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                          1,
                          &min);
             min--;
-
-           /* chosenAtomIdx = max;
-    
-            if(abs(proj[max]) < abs(proj[min]))
-                chosenAtomIdx = min;*/
             
             chosenAtomIdx = (abs(proj[max]) > abs(proj[min])) ? max : min;
 
@@ -122,18 +117,27 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             device_vector<float>* copiedList = new device_vector<float> (chosenAtomList.begin(), chosenAtomList.end());
             Matrix* toPinvert = new Matrix(dictionaryMatrix->m, chosenAtomIdxList.size(), dictionaryMatrix->m, copiedList);
 
-            SvdContainer* pointer1 = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
-            pointer1->setMatrix(toPinvert);
-            host_vector<Matrix*> usv = pointer1->getDeviceOutputMatrices();
+            /*SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
+            container->setMatrix(toPinvert);
+            host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
 
             device_vector<float> sVector(dictionaryMatrix->m * chosenAtomIdxList.size(),0);            
             device_vector<float> tempMatMult(chosenAtomIdxList.size() * dictionaryMatrix->m);
             device_vector<float> pseudoInverse(chosenAtomIdxList.size() * dictionaryMatrix->m);
 
-            for(int i = 0; i < usv[1]->n; i++){    
-                if(usv[1]->deviceVector->data()[i] != 0)
-                    sVector[(i * chosenAtomIdxList.size()) + i] = 1./usv[1]->deviceVector->data()[i];
-            }
+            host_vector<int> indicesHost(usv[1]->n);
+
+            for (int i = 0; i < usv[1]->n; i++)
+                indicesHost[i] = (i * chosenAtomIdxList.size()) + i;
+            
+            device_vector<int> indicesDevice = indicesHost;
+            
+            transform_if(usv[1]->deviceVector->begin(),
+                         usv[1]->deviceVector->end(),
+                         make_permutation_iterator(sVector.begin(),indicesDevice.begin()),
+                         1./_1,
+                         not_zero());
+
 
             cublasSgemm(handle,
                 CUBLAS_OP_N,
@@ -167,13 +171,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
             device_vector<float> weightList(chosenAtomIdxList.size());
 
-            if(chosenAtomIdxList.size() == 1)
-                weightList[0] = inner_product(pseudoInverse.begin(),
-                                pseudoInverse.end(),
-                                patchesMatrix->deviceVector->begin() + (inputIdx * patchesMatrix->m),
-                                0.f);
-            else{
-                cublasSgemv(handle,
+            cublasSgemv(handle,
                             CUBLAS_OP_N,
                             chosenAtomIdxList.size(),
                             dictionaryMatrix->m,
@@ -185,28 +183,16 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                             &beta,
                             raw_pointer_cast(weightList.data()),
                             1);            
-            }
+
             //store coefficient 
-            for(int i = 0 ; i < chosenAtomIdxList.size() ; i++){
-				int thisAtomIdx = chosenAtomIdxList[i] ;
-				thisSparseCode[thisAtomIdx] = weightList[i];
-                
-			}
+            copy(weightList.begin(),
+                 weightList.end(),
+                 make_permutation_iterator(thisSparseCode.begin(),chosenAtomIdxList.begin()));
           
-            if(weightList.size()==1)
-                transform(chosenAtomList.begin(),
-                          chosenAtomList.end(),
-                          tempVec.begin(),
-                          _1*weightList[0]);
-            else{
-              /*  std::cout<<"chosenAtomListSize"<<chosenAtomList.size()<<std::endl;
-                std::cout<<"weightListSize"<<weightList.size()<<std::endl;
-                std::cout<<"tempVecSize"<<tempVec.size()<<std::endl;
-                std::cout<<std::cin.get();
                 cublasSgemv(handle,
                             CUBLAS_OP_N,
                             dictionaryMatrix->m,
-                            chosenAtomList.size(),
+                            chosenAtomIdxList.size(),
                             &alfa,
                             raw_pointer_cast(chosenAtomList.data()),
                             dictionaryMatrix->m,
@@ -214,31 +200,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                             1,
                             &beta,
                             raw_pointer_cast(tempVec.data()),
-                            1);*/
-                transform(chosenAtomList.begin(),
-                          chosenAtomList.begin() + dictionaryMatrix->m,
-                          tempVec.begin(),
-                          _1 * weightList[0]); 
-                
-                device_vector<float> tempVec2(dictionaryMatrix->m);//,0);
-
-                for(int i = 1; i < weightList.size(); i++)
-                {
-                    transform(chosenAtomList.begin() + (i * dictionaryMatrix->m),
-                              chosenAtomList.begin() + ((i + 1) * dictionaryMatrix->m),
-                              tempVec2.begin(),
-                              _1 * weightList[i]);
-                    
-                
-                    
-                    transform(tempVec2.begin(),
-                              tempVec2.end(),
-                              tempVec.begin(),
-                              tempVec.begin(),
-                              plus<float>());
-                }
-                            
-            }
+                            1);
 
             transform(patchesMatrix->deviceVector->begin() + (inputIdx * patchesMatrix->m),
                       patchesMatrix->deviceVector->begin() + ((inputIdx+1) * patchesMatrix->m),
@@ -250,27 +212,17 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                     dictionaryMatrix->m,
                     raw_pointer_cast(residualVec.data()),
                     1,
-                    &norm);
+                    &norm);*/
 
-            for(int i=0; i<usv.size(); i++)
-                delete usv[i]; 
+           // delete container; 
             
             if(norm < 0.001) break;
             
             iter++;
         }
-        sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
+        
+       // sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
     }
-    /*int x=0, y=0;
-    for(int i = 0; i < sparseCode->size(); i++)
-    {
-        if(sparseCode->data()[i]==0)
-            x++;
-        else 
-            y++;
-    }
-    std::cout<<"nulli: "<<x<<" non nulli: "<<y<<std::endl;
-    std::cin.get();*/
     
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();

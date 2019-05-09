@@ -14,7 +14,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     find_package(CUDA 10.1 QUIET REQUIRED)
 
-    set(CMAKE_CXX_FLAGS "-std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")   
 
     add_compile_options(-g)
 
@@ -22,7 +22,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
    
     cuda_add_library(jsonLib lib/jsonLib/jsonxx.h lib/jsonLib/jsonxx.cc)
 
-    cuda_add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cpp lib/baseUtilityLib/time_elapsed.cpp)
+    cuda_add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cu lib/baseUtilityLib/time_elapsed.cpp)
 
     cuda_add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 
@@ -36,7 +36,9 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
 ELSE()
 
+
     set(CMAKE_CUDA_COMPILER /usr/lib/nvidia-cuda-toolkit/bin/nvcc)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     
     IF(NOT DEFINED CMAKE_CUDA_STANDARD)
         set(CMAKE_CUDA_STANDARD 11)
@@ -47,7 +49,7 @@ ELSE()
 
     add_library(jsonLib lib/jsonLib/jsonxx.h lib/jsonLib/jsonxx.cc)
 
-    add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cpp lib/baseUtilityLib/time_elapsed.cpp)
+    add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cu lib/baseUtilityLib/time_elapsed.cpp)
 
     add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 

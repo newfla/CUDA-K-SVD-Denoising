@@ -8,7 +8,8 @@
 #include <dirent.h>
 #include <CImg.h>
 #include <matUtilityLib.h>
-#include <thrust/transform_reduce.h>
+
+#include <thrust/copy.h>
 
 namespace denoising{
 
@@ -73,10 +74,9 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         baseUtl::Matrix* noisePatches = NULL;
         baseUtl::Matrix* dictionary = NULL;
         baseUtl::Matrix* sparseCode = NULL;
-        svd::SvdContainer* svdContainer = NULL;
         
         CudaKSvdDenoiser();
-        void buildSvdContainer();
+        svd::SvdContainer* buildSvdContainer();
         void createPatches();
         void initDictionary();
         void updateDictionary();

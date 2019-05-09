@@ -7,7 +7,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
 #include <thrust/functional.h>
-#include <thrust/inner_product.h>
+#include <thrust/sequence.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/for_each.h>
 #include <cublas_v2.h>
 #include <svdLib.h>
 
@@ -104,6 +107,15 @@ class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
         int maxIters = 5;
 
     friend MatrixOps;
+};
+
+struct not_zero
+{
+  __host__ __device__
+  bool operator()(float x)
+  {
+    return x != 0;
+  }
 };
 
 #endif

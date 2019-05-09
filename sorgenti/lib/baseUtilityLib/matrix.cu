@@ -50,15 +50,18 @@ Matrix::Matrix(int m, int n, int ld, device_vector<float>* matrix){
 
 //******************************************************
 //  Destructor
-//  Free data on HOST (data on DEVICE is already freed) 
+//  Free data on HOST/DEVICE
 //*****************************************************
 Matrix::~Matrix(){
 
   if(hostVector != NULL)
-    delete hostVector;
+    delete hostVector->data();
 
-  if(deviceVector != NULL)
+  if(deviceVector != NULL){
+    deviceVector->clear();
+    deviceVector->shrink_to_fit();
     delete deviceVector;
+  }
 }
 
 //***********************************************
