@@ -34,7 +34,7 @@ make
     "patchSquareDim" : 8, //patch sides dimension
     "slidingPatch" : 2, //slidind between patches
     "atoms" : 256, //number of dicitonary elements 
-    "iter" : 1, //Ksvd iterations
+    "iter" : 10, //Ksvd iterations
     "sigma" : 25 //noise variance
 },
     
@@ -74,14 +74,12 @@ In config.json if outputFolder is the same as inputFolder original images will b
 ![DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
 
 ## History
- - Version 0.1 : Private Alpha
+ - Version 0.1 : First alpha
+ - Version 0.2 : Improved performance and removed memory leaks
 
 ## Issues
  - Supports only square patches
  - Much slower than CPU version
- - Sometimes CudaOMP Crashes due to failed CudaMalloc after some iterations
- - CuBlasGemv not works properly (replaced with 2x thrust::transform)
- - MySquare and MyPlus necessary in order to compile sources on Chandra (Cuda 10.1 seems to be fine)  
 
 
 

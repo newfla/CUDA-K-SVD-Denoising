@@ -56,7 +56,8 @@ class svd::SvdEngine{
 
 class svd::SvdCudaEngine : public svd::SvdEngine{
     protected:
-        float *deviceA , *deviceU, *deviceS, *deviceVT, *deviceWork;
+        float *deviceWork;
+        thrust::device_vector<float> *deviceA, *deviceU, *deviceS, *deviceVT;
         int lWork = 0, less = 0;
         int *deviceInfo;
         cusolverDnHandle_t cusolverH;

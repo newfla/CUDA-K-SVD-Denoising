@@ -105,7 +105,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             min--;
             
             chosenAtomIdx = (abs(proj[max]) > abs(proj[min])) ? max : min;
-
           
             chosenAtomIdxList.push_back(chosenAtomIdx);
 
@@ -117,7 +116,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             device_vector<float>* copiedList = new device_vector<float> (chosenAtomList.begin(), chosenAtomList.end());
             Matrix* toPinvert = new Matrix(dictionaryMatrix->m, chosenAtomIdxList.size(), dictionaryMatrix->m, copiedList);
 
-            /*SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
+            SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
             container->setMatrix(toPinvert);
             host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
 
@@ -137,7 +136,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                          make_permutation_iterator(sVector.begin(),indicesDevice.begin()),
                          1./_1,
                          not_zero());
-
 
             cublasSgemm(handle,
                 CUBLAS_OP_N,
@@ -185,10 +183,11 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                             1);            
 
             //store coefficient 
-            copy(weightList.begin(),
-                 weightList.end(),
-                 make_permutation_iterator(thisSparseCode.begin(),chosenAtomIdxList.begin()));
-          
+            transform(weightList.begin(),
+                      weightList.end(),
+                      make_permutation_iterator(thisSparseCode.begin(),chosenAtomIdxList.begin()),
+                      _1);
+
                 cublasSgemv(handle,
                             CUBLAS_OP_N,
                             dictionaryMatrix->m,
@@ -208,20 +207,20 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                       residualVec.begin(),
                       minus<float>());
             
+            norm = 0;
             cublasSnrm2(handle,
                     dictionaryMatrix->m,
                     raw_pointer_cast(residualVec.data()),
                     1,
-                    &norm);*/
+                    &norm);
 
-           // delete container; 
+            delete container; 
             
             if(norm < 0.001) break;
             
             iter++;
         }
-        
-       // sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
+        sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
     }
     
     auto end = std::chrono::steady_clock::now();

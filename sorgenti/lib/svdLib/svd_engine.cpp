@@ -10,7 +10,6 @@ SvdEngine::SvdEngine(){}
 //  Free Matrix* acquired (HOST/DEVICE) 
 //*************************************
 SvdEngine::~SvdEngine(){
-
     delete input;
     for(Matrix* matrix : output)
         delete matrix;

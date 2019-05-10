@@ -14,11 +14,12 @@ package svdLib {
     abstract class SvdCudaEngine{
 
         # float* deviceA
-        # float* deviceU
-        # float* deviceS
-        # float* deviceVT
-        # float* deviceWork
+        # device_vector<float>* deviceU
+        # device_vector<float>* deviceS
+        # device_vector<float>* deviceVT
+        # device_vector<float>* deviceWork
         # int lWork
+        # int less
         # int* deviceInfo
         # cusolverDnHandle_t cusolverH
         

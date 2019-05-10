@@ -133,8 +133,7 @@ void CudaKSvdDenoiser::createPatches(){
 
     std::swap(inputMatrix->m, inputMatrix->n);
     inputMatrix->ld = inputMatrix->m;
-
-
+    
     auto end = std::chrono::steady_clock::now();
     std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(end-start).count()<<" s"<<std::endl<<std::endl;
 }
@@ -177,8 +176,6 @@ void CudaKSvdDenoiser::updateDictionary(){
         MatrixOps* mult;
         Matrix* dx;
         Matrix* v;
-        Matrix* u;
-        Matrix* s;
 
         buildSvdContainer();
 
@@ -219,7 +216,7 @@ void CudaKSvdDenoiser::updateDictionary(){
         transform(selectInput.begin(), selectInput.end(), dx->deviceVector->begin(),dx->deviceVector->begin(), minus<float>());
 
         //Compute SVD on E
-        SvdContainer* svdContainer= buildSvdContainer();
+        SvdContainer* svdContainer = buildSvdContainer();
         svdContainer->setMatrix(dx);
         host_vector<Matrix*> usv = svdContainer->getDeviceOutputMatrices();
         
@@ -232,26 +229,19 @@ void CudaKSvdDenoiser::updateDictionary(){
         else
             v = usv[2];
 
-        //Replace dictionary column
-        u = usv[0];        
-        transform(u->deviceVector->begin(),
-                  u->deviceVector->begin() + u->m,
+        //Replace dictionary column   
+        transform(usv[0]->deviceVector->begin(),
+                  usv[0]->deviceVector->begin() + usv[0]->m,
                   dictionary->deviceVector->begin() + (atomIdx * dictionary->m),
                   _1 * -1.f);
 
         //Calculate new coeffs
-        s = usv[1];
-        transform(v->deviceVector->begin(), v->deviceVector->begin() + v->m, v->deviceVector->begin(), -1.f * s->deviceVector->data()[0] * _1);
-
-        for(int i = 0 ; i < relevantDataIndices.size() ; i++ ) {
-            int inputIdx = relevantDataIndices[i];
-            sparseCode->deviceVector->data()[(inputIdx * sparseCode->m) + atomIdx] = v->deviceVector->data()[i] ; 
-        }
-       /* transform(relevantDataIndices.begin(),relevantDataIndices.end(), idxSeq.begin(), atomIdx + (_1 * sparseCode->m));
+        transform(relevantDataIndices.begin(),relevantDataIndices.end(), idxSeq.begin(),  atomIdx + (_1 * sparseCode->m));        
+       
         transform(v->deviceVector->begin(),
-                  v->deviceVector->begin() + v->m,
-                  sparseCode->deviceVector->begin(),//make_permutation_iterator(sparseCode->deviceVector->begin(), idxSeq.begin()),
-                  -1.f * s->deviceVector->data()[0] *_1);*/
+                  v->deviceVector->begin() + relevantDataIndices.size(),
+                  make_permutation_iterator(sparseCode->deviceVector->begin(), idxSeq.begin()),
+                  -1.f * usv[1]->deviceVector->data()[0] *_1);
 
         delete svdContainer;   
     }
@@ -269,11 +259,15 @@ void CudaKSvdDenoiser::kSvd(){
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
-        size_t freeMem, totalMem;
-        cudaMemGetInfo(&freeMem, &totalMem);
-        std::cout << totalMem << ", " << freeMem << std::endl;
+     
         CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
         sparseCode = omp->work(noisePatches, dictionary);
+
+        /*for (int i = 0; i < sparseCode->deviceVector->size(); i++){
+            if(sparseCode->deviceVector->data()[i]!=0)    
+                std::cout<<"sparse i: "<<i<<" val: "<<sparseCode->deviceVector->data()[i]<<std::endl;
+        }
+    	std::cin.get();*/
 
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
@@ -281,7 +275,7 @@ void CudaKSvdDenoiser::kSvd(){
 
         //Dict update phase
         start = std::chrono::steady_clock::now();
-        //updateDictionary();
+        updateDictionary();
         end = std::chrono::steady_clock::now();
         auto tot2 = end - start;
         std::cout<<"    # Dict update Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot2).count()<<" s"<<std::endl;
@@ -366,7 +360,6 @@ void CudaKSvdDenoiser::createImage(){
     Matrix* trs = tras->work(outputMatrix, outputMatrix);
 
     delete outputMatrix;
-    delete tras;
     outputMatrix = trs;
     outputMatrix->copyOnHost();
  
@@ -374,5 +367,4 @@ void CudaKSvdDenoiser::createImage(){
     auto tot1 = end - start;
 
     std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl;
-
 }

@@ -7,7 +7,7 @@
         "patchSquareDim" : 8,
         "slidingPatch" : 2,
         "atoms" : 256,
-        "iter" : 10,
+        "iter" : 1,
         "sigma" : 25
     },
     
