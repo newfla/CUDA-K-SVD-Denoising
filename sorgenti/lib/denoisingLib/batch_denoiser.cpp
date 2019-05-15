@@ -113,10 +113,9 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         denoiser->slidingPatch = slidingPatch;
         denoiser->refImage = inputFolder + "/" + refFile;
     
-        CudaKSvdDenoiser* cudaDenoiser = (CudaKSvdDenoiser*) denoiser;
-        cudaDenoiser->atoms = atoms;
-        cudaDenoiser->iter = iter;
-        cudaDenoiser->sigma = sigma;
+        denoiser->atoms = atoms;
+        denoiser->iter = iter;
+        denoiser->sigma = sigma;
         
         batchDenoiser->denoisers.push_back(denoiser);
         batchDenoiser->times.push_back(denoiser->getTimeElapsed());

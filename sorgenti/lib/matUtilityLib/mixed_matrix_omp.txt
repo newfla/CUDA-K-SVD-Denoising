@@ -1,0 +1,213 @@
+#include <matUtilityLib.h>
+
+using namespace baseUtl;
+using namespace svd;
+using namespace matUtl;
+using namespace thrust;
+using namespace thrust::placeholders;
+
+MixedMatrixOmp::MixedMatrixOmp(){}
+
+//********************************************************
+// Create Mixed additional data and move data on DEVICE
+//*******************************************************
+void MixedMatrixOmp::init(){
+
+    auto start = std::chrono::steady_clock::now();
+
+    sparseCode = new device_vector<float>(b->n * a->n,0);
+
+    auto end = std::chrono::steady_clock::now();
+    timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+}
+
+//******************************
+// Clear cuBlas additional data
+//*****************************
+void CuBlasMatrixOmp::finalize(){
+
+    auto start = std::chrono::steady_clock::now();
+
+    c = new Matrix(a->n, b->n, a->n, sparseCode);
+
+    auto end = std::chrono::steady_clock::now();
+    timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+}
+
+
+// **********************************************************************
+// MATCHING PURSUIT ALGORITM (OMP) FOR SPARSE CODING 
+// Input:  + patchesMatrix [feature per patch * number of patches] 
+//         + dictionary   [feature * atoms]         
+// Output: + sparse coding of input vector [ atoms * number of patches]
+//**********************************************************************
+baseUtl::Matrix* MixedMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionaryMatrix){
+
+    this->b = patchesMatrix;
+    this->a = dictionaryMatrix;
+    init();
+    
+
+    auto start = std::chrono::steady_clock::now();
+    
+    float norm = 0;
+    int max = 0, min = 0, chosenAtomIdx = 0;
+
+    host_vector<float> residualVec(patchesMatrix->deviceVector->begin(), patchesMatrix->deviceVector->end());
+
+    for(int inputIdx = 0; inputIdx < patchesMatrix->n; inputIdx++){ //n == #columns == # patches
+
+       
+        
+        host_vector<float> tempVec(dictionaryMatrix->m);
+        host_vector<float> thisSparseCode(dictionaryMatrix->n);
+        host_vector<int> chosenAtomIdxList;
+		host_vector<float> chosenAtomList; 
+        int iter = 0;
+        
+        while(iter < maxIters){
+        
+            device_vector<float> proj(dictionaryMatrix->n);
+
+            cblas_sgemv(CblasColMajor,
+                        CblasTrans,
+                        dictionaryMatrix->m,
+                        dictionaryMatrix->n,
+                        alfa,
+                        raw_pointer_cast(dictionaryMatrix->deviceVector->data()),
+                        dictionaryMatrix->ld,
+                        raw_pointer_cast(residualVec.data() + (inputIdx * patchesMatrix->m)),
+                        1,
+                        beta,
+                        raw_pointer_cast(proj.data()),
+                        1);
+
+            max = cblas_isamax(dictionaryMatrix->n, raw_pointer_cast(proj.data()), 1);
+
+            max--;
+
+           // min = cblas_isamin(dictionaryMatrix->n, raw_pointer_cast(proj.data()), 1);
+            min--;
+            
+            chosenAtomIdx = (abs(proj[max]) > abs(proj[min])) ? max : min;
+          
+            chosenAtomIdxList.push_back(chosenAtomIdx);
+
+            chosenAtomList.insert(chosenAtomList.end(),
+                                  dictionaryMatrix->deviceVector->begin() + (chosenAtomIdx * dictionaryMatrix->m),
+                                  dictionaryMatrix->deviceVector->begin() + ((chosenAtomIdx + 1) * dictionaryMatrix->m));
+            
+            //ChosenAtomList Pseudo-Inverse
+            device_vector<float>* copiedList = new device_vector<float> (chosenAtomList.begin(), chosenAtomList.end());
+            Matrix* toPinvert = new Matrix(dictionaryMatrix->m, chosenAtomIdxList.size(), dictionaryMatrix->m, copiedList);
+
+            SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
+            container->setMatrix(toPinvert);
+            host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
+
+            host_vector<float> sVector(dictionaryMatrix->m * chosenAtomIdxList.size(),0);            
+            host_vector<float> tempMatMult(chosenAtomIdxList.size() * dictionaryMatrix->m);
+            host_vector<float> pseudoInverse(chosenAtomIdxList.size() * dictionaryMatrix->m);
+
+            host_vector<int> indicesHost(usv[1]->n);
+
+            for (int i = 0; i < usv[1]->n; i++)
+                indicesHost[i] = (i * chosenAtomIdxList.size()) + i;
+            
+            usv[0]->copyOnHost();
+            usv[1]->copyOnHost();
+            usv[2]->copyOnHost();
+            
+            transform_if(usv[1]->hostVector->begin(),
+                         usv[1]->hostVector->end(),
+                         make_permutation_iterator(sVector.begin(),indicesHost.begin()),
+                         1./_1,
+                         not_zero());
+
+            cblas_sgemm(CblasColMajor,
+                CblasNoTrans,
+                CblasNoTrans, //sVector è già trasposto a mano in realtà
+                usv[2]->m,
+                usv[0]->m,
+                usv[2]->n,
+                alfa,
+                raw_pointer_cast(usv[2]->hostVector->data()),
+                usv[2]->ld,
+                raw_pointer_cast(sVector.data()),
+                usv[2]->ld,
+                beta,
+                raw_pointer_cast(tempMatMult.data()),
+                usv[2]->ld);
+
+            cblas_sgemm(CblasColMajor,
+                CblasNoTrans,
+                CblasNoTrans,
+                usv[2]->m,
+                usv[0]->m,
+                usv[0]->m,
+                alfa,
+                raw_pointer_cast(tempMatMult.data()),
+                usv[2]->ld,
+                raw_pointer_cast(usv[0]->hostVector->data()),
+                usv[0]->ld,
+                beta,
+                raw_pointer_cast(pseudoInverse.data()),
+                usv[2]->ld);
+
+            host_vector<float> weightList(chosenAtomIdxList.size());
+
+            cblas_sgemv(CblasColMajor,
+                            CblasNoTrans,
+                            chosenAtomIdxList.size(),
+                            dictionaryMatrix->m,
+                            alfa,
+                            raw_pointer_cast(pseudoInverse.data()),
+                            chosenAtomIdxList.size(),
+                            raw_pointer_cast(patchesMatrix->hostVector->data()) + (inputIdx * patchesMatrix->m),
+                            1,
+                            beta,
+                            raw_pointer_cast(weightList.data()),
+                            1);            
+
+            //store coefficient 
+            transform(weightList.begin(),
+                      weightList.end(),
+                      make_permutation_iterator(thisSparseCode.begin(),chosenAtomIdxList.begin()),
+                      _1);
+
+                cblas_sgemv(CblasColMajor,
+                            CblasNoTrans,
+                            dictionaryMatrix->m,
+                            chosenAtomIdxList.size(),
+                            alfa,
+                            raw_pointer_cast(chosenAtomList.data()),
+                            dictionaryMatrix->m,
+                            raw_pointer_cast(weightList.data()),
+                            1,
+                            beta,
+                            raw_pointer_cast(tempVec.data()),
+                            1);
+
+            transform(patchesMatrix->hostVector->begin() + (inputIdx * patchesMatrix->m),
+                      patchesMatrix->hostVector->begin() + ((inputIdx+1) * patchesMatrix->m),
+                      tempVec.begin(),
+                      residualVec.begin() + (inputIdx * patchesMatrix->m),
+                      minus<float>());
+            
+            norm = cblas_snrm2(dictionaryMatrix->m, raw_pointer_cast(residualVec.data() + (inputIdx * patchesMatrix->m)), 1);
+
+            delete container; 
+            
+            if(norm < 0.001) break;
+            
+            iter++;
+        }
+        sparseCode->insert(sparseCode->begin() + (inputIdx * dictionaryMatrix->n), thisSparseCode.begin(), thisSparseCode.end());
+    }
+    
+    auto end = std::chrono::steady_clock::now();
+    timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    finalize();
+    return c;
+}

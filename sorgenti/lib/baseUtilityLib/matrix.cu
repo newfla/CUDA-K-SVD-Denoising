@@ -48,6 +48,23 @@ Matrix::Matrix(int m, int n, int ld, device_vector<float>* matrix){
   deviceVector = matrix;
 }
 
+//****************************************************
+//  Constructor (data on both DEVICE and HOST)
+//  input:  + m matrix rows
+//          + n matrix columns
+//          + ld matrix leading dimension
+//          + matrixHost values (host_vector<float*>) 
+//          + matrixDev values (device_vector<float*>) 
+//****************************************************
+Matrix::Matrix(int m, int n, int ld, host_vector<float>* matrixHost, device_vector<float>* matrixDev){
+
+  this->m = m;
+  this->n = n;
+  this->ld = ld;
+  hostVector = matrixHost;
+  deviceVector = matrixDev;
+}
+
 //******************************************************
 //  Destructor
 //  Free data on HOST/DEVICE

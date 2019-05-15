@@ -54,7 +54,6 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testBatchDenoiser(){
-    //BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/flavio/Progetti/Denosing-SVD/sorgenti/config.1.json");
     BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/config.json");
     batchDenoiser->seqBatchDenoising();
 

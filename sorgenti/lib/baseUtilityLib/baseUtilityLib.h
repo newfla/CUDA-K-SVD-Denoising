@@ -23,6 +23,7 @@ class baseUtl::Matrix{
         Matrix(int, int, int, float*);
         Matrix(int, int, int, thrust::host_vector<float>*);
         Matrix(int, int, int, thrust::device_vector<float>*);
+        Matrix(int, int, int, thrust::host_vector<float>*, thrust::device_vector<float>*);
         ~Matrix();
         Matrix* cloneHost();
         void copyOnDevice();

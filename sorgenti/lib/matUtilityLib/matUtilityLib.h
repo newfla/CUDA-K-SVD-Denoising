@@ -21,9 +21,10 @@ namespace matUtl{
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
     class CuBlasMatrixOmp;
+    class MixedMatrixOmp;
 
     //Enum section
-    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP};
+    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP, MIXED_OMP};
 };
 
 
@@ -103,6 +104,23 @@ class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
 
     private:
         cublasHandle_t handle;
+        thrust::device_vector<float>* sparseCode;
+        int maxIters = 5;
+
+    friend MatrixOps;
+};
+
+class matUtl::MixedMatrixOmp : public matUtl::MatrixOps{
+
+    public:
+        baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
+
+    protected:
+        MixedMatrixOmp();
+        void init();
+        void finalize();
+
+    private:
         thrust::device_vector<float>* sparseCode;
         int maxIters = 5;
 

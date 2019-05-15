@@ -9,7 +9,7 @@ __90% of K-SVD computation runs on GPU__
 ## Dependencies
  
  - Cmake >= 3.0
- - CUDA >= 9.1
+ - CUDA >= 10.1
  - CImg
  - ImageMagick
  

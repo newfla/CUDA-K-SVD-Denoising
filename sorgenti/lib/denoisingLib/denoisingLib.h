@@ -8,7 +8,6 @@
 #include <dirent.h>
 #include <CImg.h>
 #include <matUtilityLib.h>
-
 #include <thrust/copy.h>
 
 namespace denoising{
@@ -16,6 +15,7 @@ namespace denoising{
     //Class section
     class Denoiser;
     class CudaKSvdDenoiser;
+    class MixedKSvdDenoiser;
     class BatchDenoiser;
 
     //Enum section
@@ -34,6 +34,9 @@ class denoising::Denoiser{
     protected:
         int patchSquareDim = 8;
         int slidingPatch = 2;
+        int atoms = 256;
+        int iter = 10;
+        float sigma = 25;
         std::string refImage;
         baseUtl::Matrix* inputMatrix = NULL;
         baseUtl::Matrix* outputMatrix = NULL;
@@ -54,6 +57,33 @@ class denoising::Denoiser{
 
 };
 
+class denoising::MixedKSvdDenoiser : public denoising::Denoiser{
+
+    public:
+        ~MixedKSvdDenoiser();
+        signed char denoising();
+
+    protected:
+        bool loadImage();
+        bool saveImage();
+        bool internalDenoising();
+
+    private:
+        baseUtl::Matrix* noisePatches = NULL;
+        baseUtl::Matrix* dictionary = NULL;
+        baseUtl::Matrix* sparseCode = NULL;
+
+        MixedKSvdDenoiser();
+        void createPatches();
+        void initDictionary();
+        void updateDictionary();
+        void createImage();
+        void kSvd();
+
+    friend Denoiser;
+    friend BatchDenoiser;
+};
+
 class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
 
     public:
@@ -61,10 +91,6 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         signed char denoising();
 
     protected:
-        int atoms = 256;
-        int iter = 10;
-        float sigma = 25;
-
         bool loadImage();
         bool saveImage();
         bool internalDenoising();

@@ -10,11 +10,11 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     include_directories(SYSTEM "/usr/local/cuda/include")
 
-    project(denoising VERSION 0.1.0)
+    project(denoising VERSION 0.3.0)
 
     find_package(CUDA 10.1 QUIET REQUIRED)
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")   
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")   
 
     add_compile_options(-g)
 
@@ -36,16 +36,14 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
 ELSE()
 
-
     set(CMAKE_CUDA_COMPILER /usr/lib/nvidia-cuda-toolkit/bin/nvcc)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     
     IF(NOT DEFINED CMAKE_CUDA_STANDARD)
         set(CMAKE_CUDA_STANDARD 11)
         set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     ENDIF()
 
-    project(denoising VERSION 0.1.0 LANGUAGES CXX CUDA)
+    project(denoising VERSION 0.3.0 LANGUAGES CXX CUDA)
 
     add_library(jsonLib lib/jsonLib/jsonxx.h lib/jsonLib/jsonxx.cc)
 
@@ -59,6 +57,6 @@ ELSE()
 
     add_executable(denoising main.cpp)
 
-    target_link_libraries(denoising denoisingLib matUtilityLib svdLib baseUtilityLib jsonLib cusolver cublas X11) 
+    target_link_libraries(denoising denoisingLib matUtilityLib svdLib baseUtilityLib jsonLib cusolver cublas X11 pthread) 
 
 ENDIF()

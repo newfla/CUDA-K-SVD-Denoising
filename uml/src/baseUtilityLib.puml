@@ -10,8 +10,9 @@ package utilityLib{
         + device_vector* deviceVector
         
         + Matrix(int, int, int, float*)
-        + Matrix(int, int, int, thrust::host_vector<float>*)
-        + Matrix(int, int, int, thrust::device_vector<float>*)
+        + Matrix(int, int, int, host_vector<float>*)
+        + Matrix(int, int, int, device_vector<float>*)
+        + Matrix(int, int, int, host_vector<float>*, device_vector<float>*)
         + Matrix* cloneHost()
         + copyOnDevice()
         + copyOnHost()

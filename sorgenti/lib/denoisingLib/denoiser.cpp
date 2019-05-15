@@ -39,10 +39,12 @@ bool Denoiser::loadImage(){
 
     inputImage = new CImg<float>(inputFile.c_str());
 
+    inputImage->transpose();
+
     if(inputImage==NULL)
         return false;
 
-    inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
+    inputMatrix = new Matrix(inputImage->width(), inputImage->height(), inputImage->width(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
