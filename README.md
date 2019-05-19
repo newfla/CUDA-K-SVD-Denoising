@@ -31,17 +31,19 @@ make
 "outputFolder" : "absolute path where processed images will be saved",
     
 "globalParams" : { //for input files
-    "patchSquareDim" : 8, //patch sides dimension
-    "slidingPatch" : 2, //slidind between patches
+    "patchWidthDim" : 8, //patch side dimension
+    "patchHeightDim" : 35,  //other patch side dimension
+    "slidingWidth" : 128, //sliding between patches x-axis
+    "slidingHeight" : 35, //sliding between patches y-axis
     "atoms" : 256, //number of dicitonary elements 
-    "iter" : 10, //Ksvd iterations
-    "sigma" : 25 //noise variance
+    "ksvditer" : 10, //Ksvd iterations
+    "ompIter": 5 //OMP phase limit
 },
     
 "files": [
     {"name" : "barbara.png", //input image file 
      "ref" : "barbaraRef.png", //no noise image file useful for PSNR
-     "sigma": 22 //ovveride sigma
+     "patchWidthDim": 22 //ovveride globalPatchWidthDim
     }
 ]
 ```
@@ -76,6 +78,7 @@ In config.json if outputFolder is the same as inputFolder original images will b
 ## History
  - Version 0.1 : First alpha
  - Version 0.2 : Improved performance and removed memory leaks
+ - Version 0.3 : Improved performance and accuracy. Sigma is no more required. Added support to rectangular patches
 
 ## Issues
  - Supports only square patches

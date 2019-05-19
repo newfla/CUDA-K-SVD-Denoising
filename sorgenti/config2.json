@@ -14,21 +14,6 @@
     },
     
     "files": [
-        {"name" : "a.png",
-         "patchWidthDim" : 8,
-         "patchHeightDim" : 4,
-         "slidingWidth" : 8,
-         "slidingHeight" : 4
-        },
-
-        {"name" : "barbara.png",
-         "ref" : "barbaraRef.png",
-         "patchWidthDim" : 8,
-         "patchHeightDim" : 8,
-         "slidingWidth" : 2,
-         "slidingHeight" : 2
-        },
-
         {"name" : "patch.png",
          "patchWidthDim" : 128,
          "patchHeightDim" : 35,
