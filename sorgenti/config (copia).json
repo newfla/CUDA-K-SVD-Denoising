@@ -27,6 +27,27 @@
          "patchHeightDim" : 8,
          "slidingWidth" : 2,
          "slidingHeight" : 2
+        },
+
+        {"name" : "patch.png",
+         "patchWidthDim" : 128,
+         "patchHeightDim" : 35,
+         "slidingWidth" : 128,
+         "slidingHeight" : 35
+        },
+
+        {"name" : "patch.png",
+         "patchWidthDim" : 256,
+         "patchHeightDim" : 70,
+         "slidingWidth" : 256,
+         "slidingHeight" : 70
+        },
+        {"name" : "patch.png",
+         "patchWidthDim" : 512,
+         "patchHeightDim" : 140,
+         "slidingPatch" : 71680,
+         "slidingWidth" : 512,
+         "slidingHeight" : 140
         }
     ]
   }

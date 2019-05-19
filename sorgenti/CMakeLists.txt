@@ -26,7 +26,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     cuda_add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 
-    cuda_add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
+    cuda_add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_ops.cu lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
 
     cuda_add_library(denoisingLib lib/denoisingLib/denoisingLib.h lib/denoisingLib/denoiser.cpp lib/denoisingLib/batch_denoiser.cpp lib/denoisingLib/cuda_svd_denoiser.cu)
 
@@ -51,7 +51,7 @@ ELSE()
 
     add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
 
-    add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
+    add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_ops.cu lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
 
     add_library(denoisingLib lib/denoisingLib/denoisingLib.h lib/denoisingLib/denoiser.cpp lib/denoisingLib/batch_denoiser.cpp lib/denoisingLib/cuda_svd_denoiser.cu)
 

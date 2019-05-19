@@ -39,13 +39,14 @@ bool Denoiser::loadImage(){
 
     inputImage = new CImg<float>(inputFile.c_str());
 
+    sigma = (float) sqrt(inputImage->variance_noise());
+
     inputImage->transpose();
 
     if(inputImage==NULL)
         return false;
 
-    inputMatrix = new Matrix(inputImage->width(), inputImage->height(), inputImage->width(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
-
+    inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
@@ -71,6 +72,12 @@ bool Denoiser::saveImage(){
     auto end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
+    if(refImage.back() == '/'){
+        psnr->data()[0] = -1;
+        psnr->data()[1] = -1;
+        return true;
+    }
+    
     CImg<float> ref(refImage.c_str()), old(inputFile.c_str());
     psnr->data()[0] = ref.PSNR(old);
     psnr->data()[1] = ref.PSNR(image);

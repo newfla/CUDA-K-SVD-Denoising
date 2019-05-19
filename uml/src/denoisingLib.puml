@@ -11,10 +11,16 @@ package denoisingLib{
         - String inputFile
         - String outputFile
         - CImg<float>* inputImage
-        # int patchSquareDim
-        # int slidingPatch
+        # int patchWidthDim
+        # int patchHeightDim
+        # int slidingWidth
+        # int slidingHeight
+        # int atoms
+        # int iter
+        #int ompIter
+        # int sigma
         # String refImage
-        # host_vector<double> * psnr
+        # host_vector<double>* psnr
 
         {abstract} # bool loadImage()
         {abstract} # bool saveImage()
@@ -28,9 +34,6 @@ package denoisingLib{
     note top: denoising = 0 --> SUCCESS\n = - i --> FAILED during i-th phase 
 
     class CudaKSvdDenoiser{
-        # int atoms
-        # int iter
-        # int sigma
 
         - buildSvdContainer()
         - createPatch()

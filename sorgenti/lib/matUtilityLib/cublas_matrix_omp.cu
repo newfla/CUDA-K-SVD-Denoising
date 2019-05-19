@@ -15,15 +15,9 @@ void CuBlasMatrixOmp::init(){
 
     auto start = std::chrono::steady_clock::now();
 
-    cublasCreate(&handle);
+    CuBlasMatrixOps::init();   
 
-    if(a->deviceVector == NULL)
-        a->copyOnDevice();
-
-    if(b->deviceVector == NULL)
-        b->copyOnDevice();
-
-    sparseCode = new device_vector<float>(b->n * a->n,0);
+    cVector = new device_vector<float>(b->n * a->n,0);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -36,8 +30,7 @@ void CuBlasMatrixOmp::finalize(){
 
     auto start = std::chrono::steady_clock::now();
 
-    c = new Matrix(a->n, b->n, a->n, sparseCode);
-    cublasDestroy(handle);
+    c = new Matrix(a->n, b->n, a->n, cVector);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -80,7 +73,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         
         while(iter < maxIters){
 
-            cublasSgemv(handle,
+            cublasSgemv(*handle,
                         CUBLAS_OP_T,
                         dictionaryMatrix->m,
                         dictionaryMatrix->n,
@@ -93,14 +86,14 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                         projPtr + (inputIdx * dictionaryMatrix->n),
                         1);
 
-            cublasIsamax(handle,
+            cublasIsamax(*handle,
                          dictionaryMatrix->n,
                          projPtr + (inputIdx * dictionaryMatrix->n),
                          1,
                          &max);
             max--;
 
-            cublasIsamin(handle,
+            cublasIsamin(*handle,
                          dictionaryMatrix->n,
                          projPtr + (inputIdx * dictionaryMatrix->n),
                          1,
@@ -144,7 +137,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                          1./_1,
                          not_zero());
 
-            cublasSgemm(handle,
+            cublasSgemm(*handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_N, //sVector è già trasposto a mano in realtà
                 usv[2]->m,
@@ -159,7 +152,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                 raw_pointer_cast(tempMatMult.data()),
                 usv[2]->ld);
 
-            cublasSgemm(handle,
+            cublasSgemm(*handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_T,
                 usv[2]->m,
@@ -176,7 +169,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
             device_vector<float> weightList(size);
 
-            cublasSgemv(handle,
+            cublasSgemv(*handle,
                             CUBLAS_OP_N,
                             size,
                             dictionaryMatrix->m,
@@ -193,10 +186,10 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             chosenAtomIdxList[inputIdx][iter] += (dictionaryMatrix->n * inputIdx);
             transform(weightList.begin(),
                       weightList.end(),
-                      make_permutation_iterator(sparseCode->begin(),chosenAtomIdxList[inputIdx].begin()),
+                      make_permutation_iterator(cVector->begin(),chosenAtomIdxList[inputIdx].begin()),
                       _1);
 
-                cublasSgemv(handle,
+                cublasSgemv(*handle,
                             CUBLAS_OP_N,
                             dictionaryMatrix->m,
                             size,
@@ -216,7 +209,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                       minus<float>());
             
             norm = 0;
-            cublasSnrm2(handle,
+            cublasSnrm2(*handle,
                     dictionaryMatrix->m,
                     resPtr + (inputIdx * patchesMatrix->m),
                     1,
@@ -265,7 +258,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
 
     while(iter < maxIters){
 
-        cublasSgemm(handle,
+        cublasSgemm(*handle,
                     CUBLAS_OP_T,
                     CUBLAS_OP_N,
                     dictionaryMatrix->n,
@@ -284,13 +277,13 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
 
             if(norms[inputIdx] < 0.001) continue;
 
-            cublasIsamax(handle,
+            cublasIsamax(*handle,
                          dictionaryMatrix->n,
                          projPtr + (inputIdx * dictionaryMatrix->n),
                          1,
                          &max);
 
-            cublasIsamin(handle,
+            cublasIsamin(*handle,
                          dictionaryMatrix->n,
                          projPtr + (inputIdx * dictionaryMatrix->n),
                          1,
@@ -335,7 +328,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
                          1./_1,
                          not_zero());
 
-            cublasSgemm(handle,
+            cublasSgemm(*handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_N, //sVector è già trasposto a mano in realtà
                 usv[2]->m,
@@ -351,7 +344,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
                 usv[2]->ld);
 
 
-            cublasSgemm(handle,
+            cublasSgemm(*handle,
                 CUBLAS_OP_N,
                 CUBLAS_OP_T,
                 usv[2]->m,
@@ -370,7 +363,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
 
             device_vector<float> weightList(size);
 
-            cublasSgemv(handle,
+            cublasSgemv(*handle,
                         CUBLAS_OP_N,
                         size,
                         dictionaryMatrix->m,
@@ -395,10 +388,10 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
 
             transform(weightList.begin(),
                       weightList.end(),
-                      make_permutation_iterator(sparseCode->begin(),chosenAtomIdxList[inputIdx].begin()),
+                      make_permutation_iterator(cVector->begin(),chosenAtomIdxList[inputIdx].begin()),
                       _1);
 
-            cublasSgemv(handle,
+            cublasSgemv(*handle,
                         CUBLAS_OP_N,
                         dictionaryMatrix->m,
                         size,
@@ -422,7 +415,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work2(Matrix* patchesMatrix, Matrix* dictionar
 
             if(norms[inputIdx] < 0.001) continue;
         
-            cublasSnrm2(handle,
+            cublasSnrm2(*handle,
                         dictionaryMatrix->m,
                         resPtr + (inputIdx * patchesMatrix->m),
                         1,

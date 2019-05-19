@@ -76,9 +76,8 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
 
     std::string fileName, inputFolder, outputFolder, refFile;
     std::vector<std::string> skip ={"..", "."};
-    int globalPatchSquareDim, globalSlidingPatch, globalAtoms, globalIter;
-    float globalSigma, sigma;
-    int patchSquareDim, slidingPatch, atoms, iter;
+    int globalPatchWidthDim, globalPatchHeightDim, globalSlidingWidth, globalSlidingHeight, globalAtoms, globalIter, globalOmpIter;
+    int patchWidthDim, patchHeightDim, slidingWidth, slidingHeight, atoms, iter, ompIter;
     std::fstream streamJson(jsonFile);
 
     config.parse(streamJson);
@@ -87,11 +86,14 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     inputFolder = config.get<String> ("inputFolder");
     outputFolder = config.get<String> ("outputFolder");
     files = config.get<Array>("files");
-    globalPatchSquareDim = (int) globalParams.get<Number> ("patchSquareDim");
-    globalSlidingPatch = (int) globalParams.get<Number> ("slidingPatch");
+    globalPatchWidthDim = (int) globalParams.get<Number> ("patchWidthDim");
+    globalPatchHeightDim = (int) globalParams.get<Number> ("patchHeightDim");
+    globalSlidingWidth = (int) globalParams.get<Number> ("slidingWidth");
+    globalSlidingHeight = (int) globalParams.get<Number> ("slidingHeight");
+
     globalAtoms = (int) globalParams.get<Number> ("atoms");
-    globalIter = (int) globalParams.get<Number> ("iter");
-    globalSigma = (float) globalParams.get<Number> ("sigma");
+    globalIter = (int) globalParams.get<Number> ("ksvdIter");
+    globalOmpIter = (int) globalParams.get<Number> ("ompIter");
 
     BatchDenoiser* batchDenoiser = new BatchDenoiser();
     batchDenoiser->times.push_back(new TimeElapsed());
@@ -99,23 +101,26 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     for(int i = 0; i < files.size(); i++){
 
         file = files.get<Object>(i);
-        patchSquareDim = (int) file.get<Number> ("patchSquareDim", globalPatchSquareDim);
-        slidingPatch = (int) file.get<Number> ("slidingPatch", globalSlidingPatch);
+        patchWidthDim = (int) file.get<Number> ("patchWidthDim", globalPatchWidthDim);
+        patchHeightDim = (int) file.get<Number> ("patchHeightDim", globalPatchHeightDim);
+        slidingWidth = (int) file.get<Number> ("slidingWidth", globalSlidingWidth);
+        slidingHeight = (int) file.get<Number> ("slidingHeight", globalSlidingHeight);
         atoms = (int) file.get<Number> ("atoms", globalAtoms);
         iter = (int) file.get<Number> ("iter", globalIter);
-        sigma = (float) file.get<Number> ("sigma", globalSigma);
+        ompIter = (int) file.get<Number> ("ompIter", globalOmpIter);
         fileName = (std::string) file.get<std::string>("name");
-        refFile = (std::string) file.get<std::string>("ref");
+        refFile = (std::string) file.get<std::string>("ref","");
         
-        Denoiser* denoiser = Denoiser::factory(type, inputFolder + "/" + fileName, outputFolder + "/" + fileName);
+        Denoiser* denoiser = Denoiser::factory(type, inputFolder + "/" + fileName, outputFolder + "/" + std::to_string(patchWidthDim) + "_" + std::to_string(patchHeightDim) + "_" + fileName);
         
-        denoiser->patchSquareDim = patchSquareDim;
-        denoiser->slidingPatch = slidingPatch;
+        denoiser->patchWidthDim = patchWidthDim;
+        denoiser->patchHeightDim = patchHeightDim;
+        denoiser->slidingWidth = slidingWidth;
+        denoiser->slidingHeight = slidingHeight;
         denoiser->refImage = inputFolder + "/" + refFile;
-    
+        denoiser->ompIter = ompIter;
         denoiser->atoms = atoms;
         denoiser->iter = iter;
-        denoiser->sigma = sigma;
         
         batchDenoiser->denoisers.push_back(denoiser);
         batchDenoiser->times.push_back(denoiser->getTimeElapsed());

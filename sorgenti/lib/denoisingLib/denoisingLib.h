@@ -32,8 +32,11 @@ class denoising::Denoiser{
         thrust::host_vector<double>* getPsnr();
 
     protected:
-        int patchSquareDim = 8;
-        int slidingPatch = 2;
+        int patchWidthDim = 8;
+        int patchHeightDim = 8;
+        int slidingWidth = 2;
+        int slidingHeight = 2;
+        int ompIter = 5;
         int atoms = 256;
         int iter = 10;
         float sigma = 25;

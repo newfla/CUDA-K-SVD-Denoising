@@ -15,7 +15,7 @@ void CuSolverGeSvd::init(Matrix* matrix){
     SvdCudaEngine::init(matrix);
 
     //Allocate WorkSpace on device
-    cusolverDnSgesvd_bufferSize(cusolverH, matrix->m, matrix->n, &lWork);
+    cusolverDnSgesvd_bufferSize(*cusolverH, matrix->m, matrix->n, &lWork);
     cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
     
 }
@@ -27,7 +27,7 @@ void CuSolverGeSvd::work(){
 
     //DGESVD
     cusolverDnSgesvd(
-        cusolverH,
+        *cusolverH,
         'A',
         'A',
         input->m,

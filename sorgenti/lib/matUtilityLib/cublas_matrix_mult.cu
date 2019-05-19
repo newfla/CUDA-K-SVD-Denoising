@@ -13,13 +13,7 @@ void CuBlasMatrixMult::init(){
 
     auto start = std::chrono::steady_clock::now();
 
-    cublasCreate(&handle);
-    
-    if(a->deviceVector == NULL)
-        a->copyOnDevice();
-
-    if(b->deviceVector == NULL)
-        b->copyOnDevice();
+    CuBlasMatrixOps::init();
 
     cVector = new device_vector<float>(a->m * b->n);
 
@@ -35,21 +29,9 @@ void CuBlasMatrixMult::finalize(){
     auto start = std::chrono::steady_clock::now();
 
     c = new Matrix(a->m, b->n, a->m, cVector);
-    cublasDestroy(handle);
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-}
-
-
-//************************************************
-// Set cuBlas ops
-// input = 2x operation type  (cublasOperation_t) 
-//***********************************************
-void CuBlasMatrixMult::setOps(cublasOperation_t op1, cublasOperation_t op2){
-
-    this->op1 = op1;
-    this->op2 = op2;
 }
 
 //*****************************************
@@ -69,7 +51,7 @@ baseUtl::Matrix* CuBlasMatrixMult::work(Matrix* a, Matrix* b){
     float* pointerB = raw_pointer_cast(b->deviceVector->data());
     float* pointerC = raw_pointer_cast(cVector->data());
 
-    cublasSgemm(handle,
+    cublasSgemm(*handle,
                 op1,
                 op2,
                 a->m,

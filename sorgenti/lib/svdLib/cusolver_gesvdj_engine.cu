@@ -21,7 +21,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
 
     //Allocate Space on device
     cusolverDnSgesvdj_bufferSize(
-        cusolverH, 
+        *cusolverH, 
         jobZ,
         econ,
         input->m,
@@ -46,7 +46,7 @@ void CuSolverGeSvdJ::work(){
 
     //DGESVDJ
     cusolverDnSgesvdj(
-        cusolverH,
+        *cusolverH,
         jobZ,
         econ,
         input->m,
@@ -99,12 +99,12 @@ void CuSolverGeSvdJ::printStat(){
     int executedSweeps = 0;
 
     cusolverDnXgesvdjGetSweeps(
-        cusolverH,
+        *cusolverH,
         gesvdjParams,
         &executedSweeps);
     
     cusolverDnXgesvdjGetResidual(
-        cusolverH,
+        *cusolverH,
         gesvdjParams,
         &residual);
 

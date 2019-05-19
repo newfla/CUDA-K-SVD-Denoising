@@ -21,12 +21,13 @@ package svdLib {
         # int lWork
         # int less
         # int* deviceInfo
-        # cusolverDnHandle_t cusolverH
+        {static} # cusolverDnHandle_t* cusolverH
         
 
         # init(Matrix*)
         # host_vector<Matrix*> getOutputMatrices()
         # device_vector<Matrix*> getDeviceOutputMatrices()
+        {static} + finalize()
     }
 
     enum SvdEngineType{

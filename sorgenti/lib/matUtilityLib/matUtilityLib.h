@@ -9,8 +9,6 @@
 #include <thrust/functional.h>
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/for_each.h>
 #include <cublas_v2.h>
 #include <svdLib.h>
 
@@ -18,6 +16,7 @@ namespace matUtl{
 
     //Class section
     class MatrixOps;
+    class CuBlasMatrixOps;
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
     class CuBlasMatrixOmp;
@@ -47,65 +46,64 @@ class matUtl::MatrixOps{
         
         MatrixOps();
         virtual void init() = 0;
-        virtual void finalize() = 0;
 
 };
 
-class matUtl::CuBlasMatrixMult : public matUtl::MatrixOps{
+class matUtl::CuBlasMatrixOps : public matUtl::MatrixOps{
+
+    public:
+        virtual baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b) = 0;
+        void setOps(cublasOperation_t, cublasOperation_t);
+        static void finalize();
+
+    protected:
+        static cublasHandle_t* handle;
+        cublasOperation_t op1, op2;
+        thrust::device_vector<float>* cVector; 
+
+        void init();
+        CuBlasMatrixOps();
+};
+
+class matUtl::CuBlasMatrixMult : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        void setOps(cublasOperation_t, cublasOperation_t);
         
     protected:
         CuBlasMatrixMult();
         void init();
-        void finalize();
-
-    private:
-        cublasHandle_t handle;
-        cublasOperation_t op1, op2;
-        thrust::device_vector<float>* cVector; 
+        void finalize();        
     
     friend MatrixOps;
 
 };
 
-class matUtl::CuBlasMatrixAdd : public matUtl::MatrixOps{
+class matUtl::CuBlasMatrixAdd : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        void setOps(cublasOperation_t, cublasOperation_t);
         
     protected:
         CuBlasMatrixAdd();
         void init();
         void finalize();
-
-    private:
-        cublasHandle_t handle;
-        cublasOperation_t op1, op2;
-        thrust::device_vector<float>* cVector; 
     
     friend MatrixOps;
 
 };
 
-class matUtl::CuBlasMatrixOmp : public matUtl::MatrixOps{
+class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         baseUtl::Matrix* work2(baseUtl::Matrix* a, baseUtl::Matrix* b);
+        int maxIters = 5;
 
     protected:
         CuBlasMatrixOmp();
         void init();
         void finalize();
-
-    private:
-        cublasHandle_t handle;
-        thrust::device_vector<float>* sparseCode;
-        int maxIters = 5;
 
     friend MatrixOps;
 };

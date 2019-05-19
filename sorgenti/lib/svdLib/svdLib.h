@@ -55,12 +55,16 @@ class svd::SvdEngine{
 };
 
 class svd::SvdCudaEngine : public svd::SvdEngine{
+
+    public:
+        static void finalize();
+        
     protected:
         float *deviceWork;
         thrust::device_vector<float> *deviceA, *deviceU, *deviceS, *deviceVT;
         int lWork = 0, less = 0;
         int *deviceInfo;
-        cusolverDnHandle_t cusolverH;
+        static cusolverDnHandle_t* cusolverH;
 
         SvdCudaEngine();
         virtual void init(baseUtl::Matrix*);

@@ -87,8 +87,10 @@ void testBatchDenoiser(){
         std::cout<<"    init time: "<<init<<" ms"<<std::endl;
         std::cout<<"    working time: "<<work<<" s"<<std::endl;
         std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;
-        std::cout<<"    PSNR before:"<<psnr[i-1]->data()[0]<<std::endl;
-        std::cout<<"    PSNR after:"<<psnr[i-1]->data()[1]<<std::endl;        
+        if(psnr[i-1]->data()[0]>=0){
+            std::cout<<"    PSNR before:"<<psnr[i-1]->data()[0]<<std::endl;
+            std::cout<<"    PSNR after:"<<psnr[i-1]->data()[1]<<std::endl;
+        }        
     }
     
 
@@ -118,11 +120,6 @@ int main(int argc, char *argv[]) {
     */
 
    testBatchDenoiser();
-
-    /*CImg<float> ref("../../img/input/barbaraRef.png"),
-        noise("../../img/input/barbara.png");
-
-    std::cout<<"PSNR"<<ref.PSNR(noise);*/
    
     return 0;
 }

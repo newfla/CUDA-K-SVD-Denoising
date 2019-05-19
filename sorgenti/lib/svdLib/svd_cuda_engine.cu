@@ -6,6 +6,8 @@ using namespace svd;
 using namespace baseUtl;
 using namespace thrust;
 
+cusolverDnHandle_t* SvdCudaEngine::cusolverH = NULL;
+
 SvdCudaEngine::SvdCudaEngine(){}
 
 //*******************************************************************************************************
@@ -18,7 +20,10 @@ void SvdCudaEngine::init(Matrix* matrix){
     SvdEngine::init(matrix);
 
     //Create cusolverDn handle
-    cusolverDnCreate(&cusolverH) ;
+    if(cusolverH == NULL){
+        cusolverH = new cusolverDnHandle_t();
+        cusolverDnCreate(cusolverH);
+    }
 
     //Alocate space for cusolverDnInfo
     cudaMalloc ((void**)&deviceInfo, sizeof(int));
@@ -81,7 +86,6 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
     delete deviceS;
 
     cudaFree(deviceWork);
-    cusolverDnDestroy(cusolverH);
     input->deviceVector = NULL;
 
     cudaDeviceReset();
@@ -109,7 +113,16 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
 
     //Cleaning cuda memory 
     cudaFree(deviceWork);
-    cusolverDnDestroy(cusolverH);
     
     return output;
+}
+
+//******************************
+// Clear cuSolver additional data
+//*****************************
+void SvdCudaEngine::finalize(){
+    if(cusolverH != NULL){
+        cusolverDnDestroy(*cusolverH);
+        cusolverH = NULL;
+    }
 }

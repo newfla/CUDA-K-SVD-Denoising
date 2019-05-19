@@ -21,8 +21,18 @@ package matutilityLib{
         {static} + MatrixMult* factory(MatrixOpsType)
     }
 
-    class CuBlasMatrixMult{
+    class CuBlasMatrixOps{
+        {static} # cuBlasHandle_t* handle
+        # cublasOperation_t op1
+        # cublasOperation_t op2
+        # device_vector<float>* cVector
 
+        + setOps(cublasOperation_t, cublasOperation_t)
+        {static} + finalize()
+        
+    }
+
+    class CuBlasMatrixMult{
         - cublasHandle_t handle
         - cublasOperation_t op1
         - cublasOperation_t op2
@@ -35,33 +45,25 @@ package matutilityLib{
     }
 
     class CuBlasMatrixAdd{
-
-        - cublasHandle_t handle
-        - cublasOperation_t op1
-        - cublasOperation_t op2
-        - device_vector<float>* cVector
-
         # init()
         # finalize()
         + work(Matrix* a , Matrix* b)
-        + setOps(cublasOperation_t op1, cublasOperation_t op2)
     }
 
     class CuBlasMatrixOmp{
-        - int maxIters
-        - float epsilon
-        - cublasHandle_t handle
-        - device_vector<float>* cVector
+        + int maxIters
 
         # init()
         # finalize()
         + work(Matrix* a , Matrix* b)
-        + setLimits(float epsilon, int maxIters)
+        + work2(Matrix* a , Matrix* b)
     }
-    MatrixOps -> "1" MatrixOpsType 
-    CuBlasMatrixMult --|> MatrixOps : extends
-    CuBlasMatrixAdd --|> MatrixOps : extends
-    CuBlasMatrixOmp --|> MatrixOps : extends
+
+    MatrixOps -> "1" MatrixOpsType
+    CuBlasMatrixOps --|> MatrixOps : extends
+    CuBlasMatrixMult --|> CuBlasMatrixOps : extends
+    CuBlasMatrixAdd --|> CuBlasMatrixOps : extends
+    CuBlasMatrixOmp --|> CuBlasMatrixOps : extends
 
     hide MatrixOpsType methods 
 }
