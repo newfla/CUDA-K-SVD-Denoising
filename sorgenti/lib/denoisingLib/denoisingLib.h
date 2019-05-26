@@ -135,4 +135,22 @@ class denoising::BatchDenoiser{
         BatchDenoiser();
 };
 
+struct myLog
+{
+  __host__ __device__
+  bool operator()(float x)
+  {
+    return log2f(x);
+  }
+};
+
+struct myPow
+{
+  __host__ __device__
+  bool operator()(float x)
+  {
+    return powf(x,2.);
+  }
+};
+
 #endif

@@ -1,0 +1,51 @@
+@startuml DenoiseDiagram
+|HOST|
+start
+floating note: Pink == parallel exec
+while (iter < maxIter)
+
+    partition OMP {
+        :residualVec = patches;
+        while(ompIter < maxOmpIter)
+            |#AntiqueWhite|DEVICE|
+            #HotPink:proj = sgemm(dictionary, residualVec);
+
+            while (curPatch < #Patches)
+                if(norm(residualVec[curPatch])>Epsilon) then (yes)
+                #HotPink:chosenAtomIdx = proj max Elem (abs comparison);
+                :chosenAtomList will contains all atoms (max #maxOmpIter) selected for curPatch;
+                #HotPink:pseudoInverse(chosenAtomList) SVD + 2x sgemm;
+                #HotPink:weightList = sgemv(pseudoInverse, curPatch);
+                #HotPink:copy weightList into sparseCode;
+                endif;
+                :curPatch++;
+            endwhile
+            #HotPink:residualVec = pacthes - forEachPatch(sgemv(chosenAtomList, weightList));
+        |HOST|
+        :ompIter++;
+        endwhile;
+    }
+
+    partition UpdateDictionary {
+        while(curAtom < #Atoms)
+            :relevantDataIndices will contains patchesIndexes which associated atom-coeff!=0;
+            |DEVICE|
+            :selectInput will contains patches(relevantDataIndices);
+            :selectSparseCode will contains coeffs for each patch in patches[relevantDataIndices[i]];
+            #HotPink:set selectSparseCode[atom(relevantDataIndices)] = 0;
+            #HotPink:dx = sgemm(dictionary, selectSparseCode);
+            #HotPink:dx = selectInput - dx;
+            #HotPink:usv = SVD(dx);
+            #HotPink:replace atom dictionary column with u first column;
+            #HotPink:update sparseCode;
+            :curAtom++;
+        endwhile;
+    }
+endwhile;
+|HOST|
+partition FinalOMP {
+    :sparseCode = as before;
+}
+stop
+
+@enduml

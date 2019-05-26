@@ -14,11 +14,11 @@
     },
     
     "files": [
-        {"name" : "a.png",
-         "patchWidthDim" : 8,
-         "patchHeightDim" : 4,
-         "slidingWidth" : 8,
-         "slidingHeight" : 4
+        {"name" : "patch_c.jpg",
+         "patchWidthDim" : 128,
+         "patchHeightDim" : 35,
+         "slidingWidth" : 32,
+         "slidingHeight" : 9
         },
 
         {"name" : "barbara.png",

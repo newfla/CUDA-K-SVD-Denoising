@@ -1,0 +1,40 @@
+@startuml InitializationDiagram
+|HOST|
+start
+floating note: Pink == parallel exec
+
+partition Load_From_File {
+    :img = new CImg(pathFile);
+    :img = img.trasponse();
+    :inputMatrix = new Matrix(img); 
+}
+
+partition Std_Dev {
+    :sigma = sqrt(img.variance_noise());
+}
+partition Img_To_Patches {
+    while (enough next patch pixels?)
+        :findPatchIdx(IdxStart, IdxEnd);
+        :patchesHost.insert(IdxStart, IdxEnd);
+    endwhile
+    :noisePatches = new Matrix (patchesHost);
+    :noisePatches.copyOnDevice();
+    |#AntiqueWhite|DEVICE|
+    :Alloc and transfer data;
+}
+
+partition Init_Dict {
+    |HOST|
+    :dictHost = copy #ATOMS patches from patchesHost;
+    while (patchIdx<Pacthes)
+            #HotPink:norm = l2norm(currentPatch);
+            #HotPink:transform(currentPacth / norm);
+    endwhile
+    :dictionary = new Matrix(dictHost);
+    :dictionary.copyOnDevice();
+    |#AntiqueWhite|DEVICE|
+    :Alloc and transfer data;
+}
+stop
+
+@enduml

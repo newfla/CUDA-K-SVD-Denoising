@@ -53,8 +53,7 @@ signed char CudaKSvdDenoiser::denoising(){
 //  output:  + staus (bool)
 //*************************
 bool CudaKSvdDenoiser::loadImage(){
-
-    //TODO
+    transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog());
     return Denoiser::loadImage();
 }
 
@@ -74,7 +73,7 @@ bool CudaKSvdDenoiser::internalDenoising(){
 
     auto start = std::chrono::steady_clock::now();
 
-    //Divide image in square patches column major of fixed dims
+    //Divide image in patches column major of fixed dims
     createPatches();
 
     //Init Dict
@@ -105,7 +104,6 @@ void CudaKSvdDenoiser::createPatches(){
     auto start = std::chrono::steady_clock::now();
 
     int i, j;
-
     host_vector<float>* patchesHost = new host_vector<float>();
 
     //Create patch division on host
@@ -125,6 +123,16 @@ void CudaKSvdDenoiser::createPatches(){
     j = patchesHost->size() / i;
     noisePatches = new Matrix(i, j, i, patchesHost);
 
+   /* for (int i = 0; i < noisePatches->n; i++)
+    {
+        for (int j = 0; j < noisePatches->m; j++)
+            std::cout<<noisePatches->hostVector->data()[i *noisePatches->m + j]<<std::endl;
+        
+        std::cin.get();
+        
+    }*/
+    
+
     noisePatches->copyOnDevice();
     //noisePatches->hostVector = NULL;
     
@@ -138,7 +146,7 @@ void CudaKSvdDenoiser::createPatches(){
 }
 
 //*************************************************************************************************************
-//  Init a dictionary using #atoms square patches column major of fixed dims (patchWidthDim x patchHeightDim)
+//  Init a dictionary using #atoms patches column major of fixed dims (patchWidthDim x patchHeightDim)
 //************************************************************************************************************
 void CudaKSvdDenoiser::initDictionary(){
 
@@ -179,7 +187,7 @@ void CudaKSvdDenoiser::updateDictionary(){
 
         buildSvdContainer();
 
-        //Find for each patch relevant atoms --> idx!=0 
+        //Find patches that used current atom --> idx!=0 
         for(int i = 0; i < sparseCode->n; i++){ //-> n = #NoisePatches
 			if(sparseCode->deviceVector->data()[(i * sparseCode->m) + atomIdx] != 0) 
 				relevantDataIndices.push_back(i); 
@@ -370,6 +378,9 @@ void CudaKSvdDenoiser::createImage(){
               imgWeight.begin(),
               img->begin(),
               _1 / (1. + 0.034 * sigma *_2));*/
+
+    
+    transform(img->begin(),img->end(),img->begin(),myPow());
 
     CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
     image->_data = img->data();

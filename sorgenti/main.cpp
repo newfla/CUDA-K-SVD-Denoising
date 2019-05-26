@@ -98,16 +98,6 @@ void testBatchDenoiser(){
     delete batchDenoiser;
 }
 
-void testDisplayImage(){
-    CImg<unsigned char> image("../img/dora.jpg");
-   
-    CImgDisplay draw_dispR(image.RGBtoYCbCr().channel(0),"Dora");
-   
-    while (!draw_dispR.is_closed()){
-        draw_dispR.wait();
-    }
-}
-
 int main(int argc, char *argv[]) {
 
     /*    

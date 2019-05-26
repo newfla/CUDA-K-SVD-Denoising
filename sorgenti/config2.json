@@ -14,20 +14,20 @@
     },
     
     "files": [
-        {"name" : "patch.png",
+        {"name" : "patch_c.jpg",
          "patchWidthDim" : 128,
          "patchHeightDim" : 35,
          "slidingWidth" : 128,
          "slidingHeight" : 35
         },
 
-        {"name" : "patch.png",
+        {"name" : "patch.jpg",
          "patchWidthDim" : 256,
          "patchHeightDim" : 70,
          "slidingWidth" : 256,
          "slidingHeight" : 70
         },
-        {"name" : "patch.png",
+        {"name" : "patch.jpg",
          "patchWidthDim" : 512,
          "patchHeightDim" : 140,
          "slidingPatch" : 71680,

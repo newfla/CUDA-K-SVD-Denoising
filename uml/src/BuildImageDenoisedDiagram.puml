@@ -1,0 +1,42 @@
+@startuml BuildImageDenoisedDiagram
+|HOST|
+|#AntiqueWhite|DEVICE|
+start
+floating note: Pink == parallel exec
+partition Y=DxS {
+        #HotPink:noisePatches = sgemm(dictionary, sparseCode);
+        :noisePatches.copyOnHost();
+    |HOST|
+    :Alloc and transfer data;
+}
+
+partition RebuildAfirstImage {
+    :img = new host_vector(image_dim, 0);
+    while (enough next patch pixels?)
+        :findPatchIdx(IdxStart, IdxEnd);
+        #HotPink:transform(img+= noisePatches(IdxStart, IdxEnd));
+        #HotPink:for eachPixel in this patch -> pixelWeight++;
+    endwhile
+     
+        #HotPink:transform (img /= pixelsWeight);
+}
+
+partition WeightWithNoisyImage {
+    :temp = img;
+     
+        #HotPink:trasform (temp -= imgNoisy);
+        #HotPink:alfa = l2 norm(temp);
+    :alfa /= sigma * sigma * temp.size();
+    :alfa = abs(sqrt(alfa) -1.);
+     
+        #HotPink:transform (img += (imgNoisy * alfa) );
+        #HotPink:transform (img /= alfa + pixelsWeight);
+
+    :file = new Cimg(img);
+    :file.transpose();
+    :file.save(pathOnDisk);
+}
+stop
+
+
+@enduml
