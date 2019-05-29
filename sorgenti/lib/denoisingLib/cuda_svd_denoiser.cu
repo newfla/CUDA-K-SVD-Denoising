@@ -53,8 +53,10 @@ signed char CudaKSvdDenoiser::denoising(){
 //  output:  + staus (bool)
 //*************************
 bool CudaKSvdDenoiser::loadImage(){
-    transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog());
-    return Denoiser::loadImage();
+    bool a = Denoiser::loadImage();
+   // if(a)
+        //transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog());
+    return a;
 }
 
 //**************************
@@ -380,7 +382,7 @@ void CudaKSvdDenoiser::createImage(){
               _1 / (1. + 0.034 * sigma *_2));*/
 
     
-    transform(img->begin(),img->end(),img->begin(),myPow());
+   // transform(img->begin(),img->end(),img->begin(),myPow());
 
     CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
     image->_data = img->data();

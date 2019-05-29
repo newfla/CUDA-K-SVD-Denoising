@@ -149,7 +149,7 @@ struct myPow
   __host__ __device__
   bool operator()(float x)
   {
-    return powf(x,2.);
+    return powf(2.,x);
   }
 };
 
