@@ -63,7 +63,7 @@ In config.json if outputFolder is the same as inputFolder original images will b
 
 - [Initialization Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/InitializationDiagram.png)
 
-- [Denoising Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
+- [Denoising Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoiseDiagram.png)
 
 - [Build Image Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/BuildImageDenoisedDiagram.png)
 
