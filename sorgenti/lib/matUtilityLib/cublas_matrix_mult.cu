@@ -65,11 +65,55 @@ baseUtl::Matrix* CuBlasMatrixMult::work(Matrix* a, Matrix* b){
                 &beta,
                 pointerC,
                 a->ld);
-
+    cudaDeviceSynchronize();
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     finalize();
+
+    return c;
+}
+
+baseUtl::Matrix* CuBlasMatrixMult::work(baseUtl::Matrix* a, int n, thrust::device_ptr<float> pointer){
+
+    auto start = std::chrono::steady_clock::now();
+
+    cVector = new device_vector<float>(a->m * n);
+
+    auto end = std::chrono::steady_clock::now();
+    timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    
+    start = std::chrono::steady_clock::now();
+
+    float* pointerA = raw_pointer_cast(a->deviceVector->data());
+    float* pointerB = raw_pointer_cast(pointer);
+    float* pointerC = raw_pointer_cast(cVector->data());
+
+    cublasSgemm(*handle,
+                op1,
+                op2,
+                a->m,
+                n,
+                a->n,
+                &alfa,
+                pointerA,
+                a->ld,
+                pointerB,
+                a->n,
+                &beta,
+                pointerC,
+                a->ld);
+    cudaDeviceSynchronize();
+
+    end = std::chrono::steady_clock::now();
+    timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    start = std::chrono::steady_clock::now();
+
+    c = new Matrix(a->m, n, a->m, cVector);
+
+    end = std::chrono::steady_clock::now();
+    timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     return c;
 }

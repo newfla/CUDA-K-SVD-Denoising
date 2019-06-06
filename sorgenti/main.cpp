@@ -98,6 +98,8 @@ void testBatchDenoiser(){
     delete batchDenoiser;
 }
 
+
+
 int main(int argc, char *argv[]) {
 
     /*    
@@ -109,7 +111,7 @@ int main(int argc, char *argv[]) {
 
     */
 
-   testBatchDenoiser();
+  testBatchDenoiser();
    
     return 0;
 }

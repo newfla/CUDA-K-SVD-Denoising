@@ -14,9 +14,11 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     find_package(CUDA 10.1 QUIET REQUIRED)
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")   
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
     add_compile_options(-g)
+
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --default-stream per-thread")   
 
     set(CUDA_64_BIT_DEVICE_CODE ON)
    
@@ -24,7 +26,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     cuda_add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cu lib/baseUtilityLib/time_elapsed.cpp)
 
-    cuda_add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
+    cuda_add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu lib/svdLib/cusolver_gesvdj_batch_engine.cu lib/svdLib/cusolver_gesvda_batch_engine.cu)
 
     cuda_add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_ops.cu lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
 
@@ -49,7 +51,7 @@ ELSE()
 
     add_library(baseUtilityLib lib/baseUtilityLib/baseUtilityLib.h lib/baseUtilityLib/matrix.cu lib/baseUtilityLib/time_elapsed.cpp)
 
-    add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu)
+    add_library(svdLib lib/svdLib/svdLib.h lib/svdLib/svd_engine.cpp lib/svdLib/svd_container.cpp lib/svdLib/svd_cuda_engine.cu lib/svdLib/cusolver_gesvd_engine.cu lib/svdLib/cusolver_gesvdj_engine.cu lib/svdLib/cusolver_gesvdj_batch_engine.cu lib/svdLib/cusolver_gesvda_batch_engine.cu)
 
     add_library(matUtilityLib lib/matUtilityLib/matUtilityLib.h lib/matUtilityLib/matrix_ops.cpp lib/matUtilityLib/cublas_matrix_ops.cu lib/matUtilityLib/cublas_matrix_mult.cu lib/matUtilityLib/cublas_matrix_add.cu lib/matUtilityLib/cublas_matrix_omp.cu)
 

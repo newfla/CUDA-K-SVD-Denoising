@@ -97,6 +97,7 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
     switch (type)
     {
         case CUDA_K_GESVD:
+        case CUDA_K_GESVDA:
         case CUDA_K_GESVDJ:
             denoiser = new CudaKSvdDenoiser();
             ((CudaKSvdDenoiser*) denoiser)-> type = type;

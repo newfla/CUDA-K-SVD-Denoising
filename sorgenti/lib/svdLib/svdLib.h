@@ -15,9 +15,11 @@ namespace svd{
     class SvdCudaEngine;
     class CuSolverGeSvd;
     class CuSolverGeSvdJ;
+    class CuSolverGeSvdJBatch;
+    class CuSolverGeSvdABatch;
 
     //Enum section
-    enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ};
+    enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ, CUSOLVER_GESVDJ_BATCH, CUSOLVER_GESVDA_BATCH};
 };
 
 class svd::SvdContainer{
@@ -58,10 +60,10 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
 
     public:
         static void finalize();
-        
+        thrust::device_vector<float> *deviceA = NULL, *deviceU = NULL, *deviceS = NULL, *deviceVT = NULL;
+
     protected:
         float *deviceWork;
-        thrust::device_vector<float> *deviceA, *deviceU, *deviceS, *deviceVT;
         int lWork = 0, less = 0;
         int *deviceInfo;
         static cusolverDnHandle_t* cusolverH;
@@ -104,6 +106,47 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
         void printStat();
+
+    friend SvdEngine;
+
+};
+
+class svd::CuSolverGeSvdJBatch: public svd::SvdCudaEngine{
+
+    protected:
+        CuSolverGeSvdJBatch();
+        void init(baseUtl::Matrix*);
+        void work();
+        thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+
+    private:
+        float tolerance;
+        int maxSweeps;
+        int econ = 0;
+        gesvdjInfo_t gesvdjParams;
+        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
+
+        void printStat();
+
+    friend SvdEngine;
+
+};
+
+class svd::CuSolverGeSvdABatch: public svd::SvdCudaEngine{
+
+    protected:
+        CuSolverGeSvdABatch();
+        void init(baseUtl::Matrix*);
+        void work();
+        thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+
+    private:
+        float tolerance;
+        int maxSweeps;
+        int econ = 0;
+        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
     friend SvdEngine;
 

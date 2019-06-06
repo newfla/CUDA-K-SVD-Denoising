@@ -20,7 +20,6 @@ SvdEngine::~SvdEngine(){
 //  input:  + matrix (Matrix*) float, collum-major
 //************************************************
 void SvdEngine::init(Matrix* matrix){
-
     input = matrix;
 }
 
@@ -38,6 +37,12 @@ SvdEngine* SvdEngine::factory(SvdEngineType type){
 
         case CUSOLVER_GESVDJ:
             return new CuSolverGeSvdJ();
+
+        case CUSOLVER_GESVDJ_BATCH:
+            return new CuSolverGeSvdJBatch();
+        
+        case CUSOLVER_GESVDA_BATCH:
+            return new CuSolverGeSvdABatch();
             
         default:
             return NULL;

@@ -8,18 +8,16 @@
 #include <dirent.h>
 #include <CImg.h>
 #include <matUtilityLib.h>
-#include <thrust/copy.h>
 
 namespace denoising{
 
     //Class section
     class Denoiser;
     class CudaKSvdDenoiser;
-    class MixedKSvdDenoiser;
     class BatchDenoiser;
 
     //Enum section
-    enum DenoiserType{CUDA_K_GESVD, CUDA_K_GESVDJ};
+    enum DenoiserType{CUDA_K_GESVD, CUDA_K_GESVDJ, CUDA_K_GESVDA};
 };
 
 class denoising::Denoiser{
@@ -40,6 +38,7 @@ class denoising::Denoiser{
         int atoms = 256;
         int iter = 10;
         float sigma = 25;
+        bool speckle = false;
         std::string refImage;
         baseUtl::Matrix* inputMatrix = NULL;
         baseUtl::Matrix* outputMatrix = NULL;
@@ -60,33 +59,6 @@ class denoising::Denoiser{
 
 };
 
-class denoising::MixedKSvdDenoiser : public denoising::Denoiser{
-
-    public:
-        ~MixedKSvdDenoiser();
-        signed char denoising();
-
-    protected:
-        bool loadImage();
-        bool saveImage();
-        bool internalDenoising();
-
-    private:
-        baseUtl::Matrix* noisePatches = NULL;
-        baseUtl::Matrix* dictionary = NULL;
-        baseUtl::Matrix* sparseCode = NULL;
-
-        MixedKSvdDenoiser();
-        void createPatches();
-        void initDictionary();
-        void updateDictionary();
-        void createImage();
-        void kSvd();
-
-    friend Denoiser;
-    friend BatchDenoiser;
-};
-
 class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
 
     public:
@@ -99,16 +71,19 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         bool internalDenoising();
 
     private:
+        int blocks;
         DenoiserType type;
         baseUtl::Matrix* noisePatches = NULL;
         baseUtl::Matrix* dictionary = NULL;
         baseUtl::Matrix* sparseCode = NULL;
+        thrust::device_vector<int>* relevantDataIndices = NULL;
+        thrust::device_vector<int>* relevantDataIndicesCounter = NULL;
         
         CudaKSvdDenoiser();
         svd::SvdContainer* buildSvdContainer();
         void createPatches();
         void initDictionary();
-        void updateDictionary();
+        void updateDictionary(bool init);
         void createImage();
         void kSvd();
 
@@ -144,7 +119,7 @@ struct myLog
   }
 };
 
-struct myPow
+struct myExp
 {
   __host__ __device__
   bool operator()(float x)

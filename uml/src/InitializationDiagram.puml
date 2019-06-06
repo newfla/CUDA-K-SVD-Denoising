@@ -26,9 +26,10 @@ partition Img_To_Patches {
 partition Init_Dict {
     |HOST|
     :dictHost = copy #ATOMS patches from patchesHost;
-    while (patchIdx<Pacthes)
-            #HotPink:norm = l2norm(currentPatch);
-            #HotPink:transform(currentPacth / norm);
+    while (currAtom < #ATOMS)
+            #HotPink:norm = l2norm(currAtom);
+            #HotPink:divide(currAtom / norm);
+            :currAtom++;
     endwhile
     :dictionary = new Matrix(dictHost);
     :dictionary.copyOnDevice();

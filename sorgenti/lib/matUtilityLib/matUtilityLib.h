@@ -9,6 +9,7 @@
 #include <thrust/functional.h>
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
+#include <thrust/execution_policy.h>
 #include <cublas_v2.h>
 #include <svdLib.h>
 
@@ -20,10 +21,8 @@ namespace matUtl{
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
     class CuBlasMatrixOmp;
-    class MixedMatrixOmp;
-
     //Enum section
-    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP, MIXED_OMP};
+    enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP};
 };
 
 
@@ -59,22 +58,24 @@ class matUtl::CuBlasMatrixOps : public matUtl::MatrixOps{
     protected:
         static cublasHandle_t* handle;
         cublasOperation_t op1, op2;
-        thrust::device_vector<float>* cVector; 
+        thrust::device_vector<float>* cVector = NULL; 
 
         void init();
         CuBlasMatrixOps();
+
 };
 
 class matUtl::CuBlasMatrixMult : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        
+        baseUtl::Matrix* work(baseUtl::Matrix* a, int n, thrust::device_ptr<float> pointer);
+  
     protected:
         CuBlasMatrixMult();
         void init();
         void finalize();        
-    
+
     friend MatrixOps;
 
 };
@@ -97,40 +98,35 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        baseUtl::Matrix* work2(baseUtl::Matrix* a, baseUtl::Matrix* b);
         int maxIters = 5;
 
     protected:
         CuBlasMatrixOmp();
         void init();
         void finalize();
-
-    friend MatrixOps;
-};
-
-class matUtl::MixedMatrixOmp : public matUtl::MatrixOps{
-
-    public:
-        baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-
-    protected:
-        MixedMatrixOmp();
-        void init();
-        void finalize();
-
+        
     private:
-        thrust::device_vector<float>* sparseCode;
-        int maxIters = 5;
-
+        static thrust::host_vector<cudaStream_t>* streams;
+        int blocks = 0;
+        thrust::device_vector<float>* proj = NULL;
+        thrust::device_vector<float>* projAbs = NULL;
+        thrust::device_vector<float>* tempVec = NULL;
+        thrust::device_vector<int>* maxs = NULL;
+        thrust::device_vector<float>* alfaBeta = NULL;
+        thrust::device_vector<int>* chosenAtomIdxList = NULL;
+        thrust::device_vector<float>* chosenAtomList = NULL;
+        thrust::device_vector<float>* tempMatMult = NULL;
+        thrust::device_vector<float>* pseudoInverse = NULL;
+        thrust::device_vector<float>* weightList = NULL;
     friend MatrixOps;
 };
 
-struct not_zero
+struct abs_val
 {
   __host__ __device__
-  bool operator()(float x)
+  float operator()(float x)
   {
-    return x != 0;
+    return abs(x);
   }
 };
 

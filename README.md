@@ -81,12 +81,11 @@ In config.json if outputFolder is the same as inputFolder original images will b
  - Version 0.3 : Improved performance and accuracy. Sigma is no more required. Added support to rectangular patches
 
 ## Issues
- - Supports only square patches
  - Much slower than CPU version
 
 
 
 ## Credits 
-- Based on [trungmanhhuynh](https://github.com/trungmanhhuynh/kSVD-Image-Denoising) CPU version
+- Based on [npd](https://github.com/npd/ksvd) and [trungmanhhuynh](https://github.com/trungmanhhuynh/kSVD-Image-Denoising) CPU version
 
 - [JSON++ library](https://github.com/hjiang/jsonxx)

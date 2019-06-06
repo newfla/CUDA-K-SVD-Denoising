@@ -10,10 +10,45 @@
         "slidingHeight" : 2,
         "atoms" : 256,
         "ompIter": 5,
-        "ksvdIter" : 1
+        "ksvdIter" : 1,
+        "speckle" : true
     },
     
     "files": [
+
+        {"name" : "patch_c_Istanbul_luce.jpg",
+            "patchWidthDim" : 32,
+            "patchHeightDim" : 32,
+            "slidingWidth" : 8,
+            "slidingHeight" : 8
+           },
+   
+           {"name" : "patch_c_Istanbul_luce.jpg",
+            "patchWidthDim" : 32,
+            "patchHeightDim" : 32,
+            "slidingWidth" : 8,
+            "slidingHeight" : 8
+           },
+   
+           {"name" : "patch_c.jpg",
+            "patchWidthDim" : 128,
+            "patchHeightDim" : 35,
+            "slidingWidth" : 32,
+            "slidingHeight" : 9
+           },
+   
+           {"name" : "barbara.png",
+            "ref" : "barbaraRef.png",
+            "patchWidthDim" : 8,
+            "patchHeightDim" : 8,
+            "slidingWidth" : 2,
+            "slidingHeight" : 2
+           },
+
+
+
+
+           
         {"name" : "patch_c.jpg",
          "patchWidthDim" : 128,
          "patchHeightDim" : 35,

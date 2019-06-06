@@ -36,7 +36,7 @@ void CuSolverGeSvdJ::init(Matrix* matrix){
         &lWork,
         gesvdjParams);
         
-    cudaMalloc((void**) &deviceWork , sizeof(double)*lWork);
+    cudaMalloc((void**) &deviceWork , sizeof(float)*lWork);
 }
 
 //*********************************************
