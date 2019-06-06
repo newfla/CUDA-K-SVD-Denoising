@@ -43,7 +43,7 @@ make
 "files": [
     {"name" : "barbara.png", //input image file 
      "ref" : "barbaraRef.png", //no noise image file useful for PSNR
-     "patchWidthDim": 22 //ovveride globalPatchWidthDim
+     "patchWidthDim": 22 //override globalPatchWidthDim
     }
 ]
 ```
@@ -57,31 +57,38 @@ cd sorgenti/build
 In config.json if outputFolder is the same as inputFolder original images will be overwritten
 </aside>
 
+## Activity Diagram
+
+![Overview Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/OverviewDiagram.png)
+
+- [Initialization Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/InitializationDiagram.png)
+
+- [Denoising Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
+
+- [Build Image Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/BuildImageDenoisedDiagram.png)
+
 ## Class Diagram
 
-### BaseUtilityLib
+- [BaseUtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/BaseUtilityDiagram.png)
 
-![UtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/BaseUtilityDiagram.png)
+- [MatUtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/MatUtilityDiagram.png)
 
-### MatUtilityLib
+- [SvdLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/SvdDiagram.png)
 
-![UtilityLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/MatUtilityDiagram.png)
-
-### SvdLib
-
-![SvdLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/SvdDiagram.png)
-
-### DenoisingLib
-
-![DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
+- [DenoisingLib Class Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/DenoisingDiagram.png)
 
 ## History
  - Version 0.1 : First alpha
+
  - Version 0.2 : Improved performance and removed memory leaks
- - Version 0.3 : Improved performance and accuracy. Sigma is no more required. Added support to rectangular patches
+
+ - Version 0.3 : Improved performance and accuracy. Sigma is no more 
+ required. Added support to rectangular patches
+
+ - Version 0.4 : Faster than CPU version
 
 ## Issues
- - Much slower than CPU version
+ - I'm sure there are but for now I can't find them
 
 
 

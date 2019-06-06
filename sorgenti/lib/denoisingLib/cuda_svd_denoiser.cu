@@ -403,7 +403,7 @@ void CudaKSvdDenoiser::createImage(){
     
     transform(temp.begin(), temp. end(),inputMatrix->hostVector->begin(),temp.begin(), minus<float>());
     float d = transform_reduce(temp.begin(), temp.end(), square<float>(), 0.f, plus<float>());
-    d /= sigma * sigma * temp.size();
+    d /= sigma * temp.size();
 
     d = abs(sqrtf(d) -1.f);
 

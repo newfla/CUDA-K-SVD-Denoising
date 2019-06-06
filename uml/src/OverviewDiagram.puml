@@ -2,23 +2,23 @@
 start
 partition Initialization {
     :Load Image from file;
-    :Calculate noise std dev;
-    :Divide image in patches;
-    :Init Dictionary matrix (D) from noisy patches;
+    :Calculate noise variance;
+    :Divide image into nPatches noisy-patches;
+    :Init Dictionary matrix (D) picking nAtoms patches from noisy-patches;
 }
 
 partition Denoising {
     while(iter < maxIter)
-        :Calculate sparse coeffs matrix (S) by OMP;
-        :Update Dictionary (D) and coeffs matrix;
+        :Calculate sparseCode matrix (S) by OMP;
+        :Update Dictionary (D);
         :iter++;
     endwhile
-    :Recalculate sparse coeffs matrix by OMP;
+    :Recalculate sparseCode matrix (S) by OMP;
 }
 
 partition BuildImageDenosied {
-    :(Patches) Y = D X S;
-    :Build reconstructed image from patches and average with alpha*noisy image; 
+    :Build de-noised patches from D X S;
+    :Build reconstructed image from de-noised patches and average with original alpha *noisy image; 
 }
 
 stop

@@ -5,6 +5,7 @@ package denoisingLib{
     enum DenoiserType{
             CUDA_K_GESVD
             CUDA_K_GESVDJ
+            CUDA_K_GESVDA
     }
 
     abstract class Denoiser{
@@ -17,8 +18,9 @@ package denoisingLib{
         # int slidingHeight
         # int atoms
         # int iter
-        #int ompIter
+        # int ompIter
         # int sigma
+        # bool speckle
         # String refImage
         # host_vector<double>* psnr
 
@@ -42,6 +44,9 @@ package denoisingLib{
         - createImage()
         - kSvd()
         
+        - int blocks
+        - device_vector<int>* relevantDataIndices
+        - device_vector<int>* relevantDataIndicesCounter
         # bool loadImage()
         # bool saveImage()
         # bool internalDenoising()

@@ -10,7 +10,7 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 
     include_directories(SYSTEM "/usr/local/cuda/include")
 
-    project(denoising VERSION 0.3.0)
+    project(denoising VERSION 0.4.0)
 
     find_package(CUDA 10.1 QUIET REQUIRED)
 
@@ -45,7 +45,7 @@ ELSE()
         set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     ENDIF()
 
-    project(denoising VERSION 0.3.0 LANGUAGES CXX CUDA)
+    project(denoising VERSION 0.4.0 LANGUAGES CXX CUDA)
 
     add_library(jsonLib lib/jsonLib/jsonxx.h lib/jsonLib/jsonxx.cc)
 

@@ -143,9 +143,6 @@ class svd::CuSolverGeSvdABatch: public svd::SvdCudaEngine{
         thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
 
     private:
-        float tolerance;
-        int maxSweeps;
-        int econ = 0;
         cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
     friend SvdEngine;

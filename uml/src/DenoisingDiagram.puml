@@ -2,45 +2,86 @@
 |HOST|
 start
 floating note: Pink == parallel exec
-while (iter < maxIter)
+while (ksvdIter < maxKsvdIter)
 
     partition OMP {
-        :residualVec = patches;
+        :norms = host_vector(patchesMatrix->n, 1);
         while(ompIter < maxOmpIter)
             |#AntiqueWhite|DEVICE|
-            #HotPink:proj = sgemm(dictionary, residualVec);
-
-            while (curPatch < #Patches)
-                if(norm(residualVec[curPatch])>Epsilon) then (yes)
-                #HotPink:chosenAtomIdx = proj max Elem (abs comparison);
-                :chosenAtomList will contains all atoms (max #maxOmpIter) selected for curPatch;
-                #HotPink:pseudoInverse(chosenAtomList) SVD + 2x sgemm;
-                #HotPink:weightList = sgemv(pseudoInverse, curPatch);
-                #HotPink:copy weightList into sparseCode;
-                endif;
-                :curPatch++;
-            endwhile
-            #HotPink:residualVec = pacthes - forEachPatch(sgemv(chosenAtomList, weightList));
-        |HOST|
+            #HotPink:proj = SGEMM(dictionary, residualVec);
+            #HotPink:absProj = transform (proj, ABSoperator);
+            |HOST|
+            :inputIdx = 0;
+            while(inputIdx < nPatches)
+                if(norms[inputIdx] > epsilon) then(yes)
+                    :IndicesIter.add(inputIdx);
+                    |DEVICE|
+                    #HotPink:maxs[inputIdx] = ASYNC_INDEX_MAX(projABS[inputIdx][ ]);
+                endif
+                |HOST|
+                :inputIdx++;
+            endwhile;
+            |DEVICE|
+            while( inputIdx : indicesIter)
+                #HotPink:chosenAtomList[inputIdx][ ] = dict[maxs[inputIdx][ ];
+                #HotPink:copiedList[inputIdx][ ] = dict[maxs[inputIdx][ ];
+            endwhile;
+            #HotPink:USV = GESVDA_STRIDED_BATCH(copiedList);
+            #HotPink:copListInverse = V x TraspostaReciproca(S) x U "2x cublasSgemmStridedBatched";
+            |HOST|
+                while( inputIdx : indicesIter)
+                |DEVICE|
+                #HotPink:weightList[inputIdx][ ] = ASYNC_SGEMV(copListInverse[inputIdx], noisePatches[ ][ ]);
+                #HotPink:tempVec[inputIdx][ ] = ASYNC_SGEMV(chosenAtomList[inputIdx],weightList[inputIdx][ ]);
+                #HotPink:copy weightList into sparseCode (Attention to index);
+                endwhile;
+            #HotPink:residualVec = transform(noisePatches, tempVec, "Minus Point by Point");
+            |HOST|
+            while( inputIdx : indicesIter)
+                |DEVICE|
+                #HotPink:norms[inputIdx] = ASYNC_l2_NORM(residualVec[inputIdx]);
+            endwhile;
+          |HOST|
         :ompIter++;
         endwhile;
     }
 
     partition UpdateDictionary {
-        while(curAtom < #Atoms)
-            :relevantDataIndices will contains patchesIndexes which associated atom-coeff!=0;
+        |DEVICE|
+        #HotPink:while(currAtom < nAtoms)
+            #HotPink:relevantDataIndices[currAtom] = Patches Indices where sparseCode[currAtom][Idx] !=0;
+            #HotPink:relevantDataIndicesCounter[currAtom] = COUNT(relevantDataIndices[curAtom]);
+        endwhile
+        |HOST|
+        :relevantDataIndices.copyOnHost();
+        :relevantDataIndicesCounter.copyOnHost();
+        #HotPink:maxRelevant = MAX(relevantDataIndicesCounter[ ]);
+        |DEVICE|
+        :selectSparseCode = device_vector(maxRelevant * sparseCode->m);
+        |HOST|
+        while(currAtom < nAtoms)
             |DEVICE|
-            :selectInput will contains patches(relevantDataIndices);
-            :selectSparseCode will contains coeffs for each patch in patches[relevantDataIndices[i]];
-            #HotPink:set selectSparseCode[atom(relevantDataIndices)] = 0;
+            #HotPink: selectSparseCode = coeffs associted with relevantDataIndices[currAtom]
+            :patch = 0;
+            #HotPink:while(patch < relevantDataIndicesCounter)
+                #HotPink:selectSparseCode[patch][currAtom] = 0;
+                #HotPink:patchesSelected.add(patchIdx);
+                :patch++;
+            endwhile;
             #HotPink:dx = sgemm(dictionary, selectSparseCode);
-            #HotPink:dx = selectInput - dx;
-            #HotPink:usv = SVD(dx);
-            #HotPink:replace atom dictionary column with u first column;
-            #HotPink:update sparseCode;
+            #HotPink:E =  transform(patches[{relevantDataIndices}], dx, "Minus Point by Point");        
+            #HotPink:USV = SVD_JACOBI(E);
+            #HotPink: dict[currAtom] = U[0];
+            :vCol = 0;
+            #HotPink:while(patchIdx : patchesSelected)
+                #HotPink:sparseCode[patchIdx][ ]= S[1] * V[vCol][ ] ;
+                :vCol++;
+            endwhile;
+        |HOST|
             :curAtom++;
         endwhile;
     }
+    :ksvdIter++;
 endwhile;
 |HOST|
 partition FinalOMP {

@@ -6,35 +6,30 @@ floating note: Pink == parallel exec
 partition Load_From_File {
     :img = new CImg(pathFile);
     :img = img.trasponse();
-    :inputMatrix = new Matrix(img); 
+    :inputMatrix = new Matrix(img.vector, img.height, img.width); 
 }
 
 partition Std_Dev {
-    :sigma = sqrt(img.variance_noise());
+    :noiseVariance = img.variance_noise();
 }
 partition Img_To_Patches {
-    while (enough next patch pixels?)
-        :findPatchIdx(IdxStart, IdxEnd);
-        :patchesHost.insert(IdxStart, IdxEnd);
+    while (collectedPatches < nPatches)
+        :find Start End pixels for currPatch;
+        :patchesHost.insertPixelsBetween(IdxStart, IdxEnd);
+        :collectedPatches++;
     endwhile
-    :noisePatches = new Matrix (patchesHost);
-    :noisePatches.copyOnDevice();
+    :noisePatches = new Matrix (patchesHost, patchSize, nPatches);
     |#AntiqueWhite|DEVICE|
-    :Alloc and transfer data;
+    :noisePatches.copyOnDevice();
 }
 
 partition Init_Dict {
-    |HOST|
-    :dictHost = copy #ATOMS patches from patchesHost;
-    while (currAtom < #ATOMS)
-            #HotPink:norm = l2norm(currAtom);
-            #HotPink:divide(currAtom / norm);
+    :dictDevice = copy nAtoms from noisePatches;
+    while (currAtom < nAtoms)
+            :normalizeAtom(currAtom, l2_norm);
             :currAtom++;
     endwhile
-    :dictionary = new Matrix(dictHost);
-    :dictionary.copyOnDevice();
-    |#AntiqueWhite|DEVICE|
-    :Alloc and transfer data;
+    :dictionary = new Matrix(dictDevice, patchSize, nAtoms);
 }
 stop
 

@@ -39,7 +39,7 @@ bool Denoiser::loadImage(){
 
     inputImage = new CImg<float>(inputFile.c_str());
 
-    sigma = (float) sqrt(inputImage->variance_noise());
+    sigma = (float)inputImage->variance_noise();
 
     inputImage->transpose();
 

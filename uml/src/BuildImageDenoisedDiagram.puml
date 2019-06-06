@@ -3,39 +3,48 @@
 |#AntiqueWhite|DEVICE|
 start
 floating note: Pink == parallel exec
-partition Y=DxS {
-        #HotPink:noisePatches = sgemm(dictionary, sparseCode);
-        :noisePatches.copyOnHost();
+partition DxS {
+    #HotPink:noisePatches = SGEMM(dictionary, sparseCode);
     |HOST|
-    :Alloc and transfer data;
+    :noisePatches.copyOnHost();
 }
 
 partition RebuildAfirstImage {
-    :img = new host_vector(image_dim, 0);
-    while (enough next patch pixels?)
-        :findPatchIdx(IdxStart, IdxEnd);
-        #HotPink:transform(img+= noisePatches(IdxStart, IdxEnd));
-        #HotPink:for eachPixel in this patch -> pixelWeight++;
+    :img = new host_vector(imageDim, 0);
+    while (currPixel < image_Dim)
+        :currPatch = 0;
+        while(currPatch < nPatches)
+            if(currPixel in currPatch?) then (yes)
+                :img[currPixel] = currPatchFindMatch[currPixel].value();
+                :weightsPixel[currPixel]++;
+            endif
+            :currPatch++;
+        endwhile
+        :currPixel++;
     endwhile
      
-        #HotPink:transform (img /= pixelsWeight);
+    #HotPink:tempImg = weight(img,pixelsWeight);
 }
 
-partition WeightWithNoisyImage {
-    :temp = img;
-     
-        #HotPink:trasform (temp -= imgNoisy);
-        #HotPink:alfa = l2 norm(temp);
-    :alfa /= sigma * sigma * temp.size();
-    :alfa = abs(sqrt(alfa) -1.);
-     
-        #HotPink:transform (img += (imgNoisy * alfa) );
-        #HotPink:transform (img /= alfa + pixelsWeight);
+partition FindLamba {
+    #HotPink:tempImg = weightedImage(img,pixelsWeight);
+    #HotPink:distance = Pixels distance Point by Point (originalImg, tempImg);
+    :lambda = abs(sqrt(l2Norm(temp) / (noiseVariance * imgDims)) -1);
+}
 
-    :file = new Cimg(img);
+partition BuildImage {
+    #HotPink: tempImg = transform(originalImg, d, "coffMult");
+    #HotPink: img = transform(tempImg, img, "Sum Point by Point");
+    #HotPink: tempImg = transform(weightList, d, "coffAdd");
+    #HotPink: img = transform(img, tempImg, "Divide Point by Point");
+}
+
+partition SaveImage {
+    :file = new Cimg(img, originalImg.height, originalImg.width);
     :file.transpose();
-    :file.save(pathOnDisk);
+    :file.save(filePath);
 }
+
 stop
 
 

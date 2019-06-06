@@ -41,6 +41,7 @@ package matutilityLib{
         # init()
         # finalize()
         + work(Matrix* a , Matrix* b)
+        + work(Matrix*, int , device_ptr<float>)
         + setOps(cublasOperation_t, cublasOperation_t) 
     }
 
@@ -52,11 +53,20 @@ package matutilityLib{
 
     class CuBlasMatrixOmp{
         + int maxIters
-
+        - int blocks
+        - device_vector<float>* proj 
+        - device_vector<float>* projAbs
+        - device_vector<float>* tempVec
+        - device_vector<int>* maxs
+        - device_vector<float>* alfaBeta
+        - device_vector<int>* chosenAtomIdxList
+        - device_vector<float>* chosenAtomList
+        - device_vector<float>* tempMatMult
+        - device_vector<float>* pseudoInverse
+        - device_vector<float>* weightList
         # init()
         # finalize()
         + work(Matrix* a , Matrix* b)
-        + work2(Matrix* a , Matrix* b)
     }
 
     MatrixOps -> "1" MatrixOpsType
@@ -66,6 +76,7 @@ package matutilityLib{
     CuBlasMatrixOmp --|> CuBlasMatrixOps : extends
 
     hide MatrixOpsType methods 
+    hide CuBlasMatrixAdd fields
 }
 
 package baseUtilityLib{
@@ -74,7 +85,6 @@ package baseUtilityLib{
 
     hide Matrix fields
     hide Matrix methods
-
     hide TimeElapsed fields
     hide TimeElapsed methods
 }
