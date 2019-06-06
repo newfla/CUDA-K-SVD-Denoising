@@ -25,9 +25,9 @@ partition Img_To_Patches {
 
 partition Init_Dict {
     :dictDevice = copy nAtoms from noisePatches;
-    while (currAtom < nAtoms)
-            :normalizeAtom(currAtom, l2_norm);
-            :currAtom++;
+    #HotPink:while (currAtom < nAtoms)
+            #HotPink:normalizeAtom(currAtom, l2_norm);
+            #HotPink:currAtom++;
     endwhile
     :dictionary = new Matrix(dictDevice, patchSize, nAtoms);
 }
