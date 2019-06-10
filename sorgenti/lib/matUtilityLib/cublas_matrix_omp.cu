@@ -140,22 +140,15 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     float *weightListPtr = raw_pointer_cast(weightList->data());
 
     int iter = 0;
+    size_t free_byte, total_byte;
     
-    if(streams == NULL){
-        streams = new host_vector<cudaStream_t>(patchesMatrix->n);
-        for(int inputIdx = 0; inputIdx < patchesMatrix->n; inputIdx++)
+    
+     if(streams == NULL){
+        streams = new host_vector<cudaStream_t>(maxStreams);
+        for(int inputIdx = 0; inputIdx < maxStreams; inputIdx++)
             cudaStreamCreate(&(streams->data()[inputIdx]));
     }
-    else if(streams->size() < patchesMatrix->n){
-        streams->resize(patchesMatrix->n);
-        for(int inputIdx = streams->size(); inputIdx < patchesMatrix->n; inputIdx++)
-            cudaStreamCreate(&(streams->data()[inputIdx]));
-    }
-    
-/*    size_t free_byte ;
-    size_t total_byte ;
-   cudaMemGetInfo( &free_byte, &total_byte ) ;
-        std::cout<<"mem free1: "<<free_byte<<std::endl;*/
+   
     while(iter < maxIters){
 
         cublasSgemm(*handle,
@@ -187,7 +180,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
             indicesIter.push_back(inputIdx);
 
-            cublasSetStream(*handle,streams->data()[inputIdx]);
+            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
 
             cublasIsamax(*handle,
                          dictionaryMatrix->n,
@@ -207,19 +200,21 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         int max = (iter + 1) * indicesIter.size();
 
         device_vector<float>* copiedList = new device_vector<float>(max * dictionaryMatrix->m);
+        device_vector<float> sVector(indicesIter.size() * dictionaryMatrix->m * size,0);            
+        float *sVectorPtr = raw_pointer_cast(sVector.data());
 
         copyData2Kernel<<<blocks, 1024>>>(indicesIterDevice.data(),  chosenAtomList->data(), copiedList->data(), dictionaryMatrix->m, size, maxIters, indicesIter.size());
         cudaDeviceSynchronize();
-
-        device_vector<float> sVector(indicesIter.size() * dictionaryMatrix->m * size,0);            
-
-        float *sVectorPtr = raw_pointer_cast(sVector.data());
 
         //ChosenAtomList Pseudo-Inverse
         Matrix* toPinvert = new Matrix(dictionaryMatrix->m, size, indicesIter.size(), copiedList);
         SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDA_BATCH)); 
         container->setMatrix(toPinvert);
         host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
+        
+        cudaMemGetInfo( &free_byte, &total_byte ) ;
+        //std::cout<<"mem free5: "<<free_byte/1073741824.<<std::endl;
+
         transformSMat<<<blocks, 1024>>>(usv[1]->deviceVector->data(), sVector.data(), size, dictionaryMatrix->m, indicesIter.size());
         
         cudaDeviceSynchronize();
@@ -273,7 +268,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         for(int inputIdx: indicesIter){
             
             count++;
-            cublasSetStream(*handle,streams->data()[inputIdx]);
+            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
 
             cublasSgemv(*handle,
                         CUBLAS_OP_N,
@@ -295,9 +290,9 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         
         for(int inputIdx: indicesIter){
             
-            cudaStreamSynchronize(streams->data()[inputIdx]);
+            cudaStreamSynchronize(streams->data()[inputIdx % maxStreams]);
             
-            cublasSetStream(*handle,streams->data()[inputIdx]);
+            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
 
             cublasSgemv(*handle,
                         CUBLAS_OP_N,
@@ -324,7 +319,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
         for(int inputIdx : indicesIter){ //n == #columns == # patches
 
-            cublasSetStream(*handle,streams->data()[inputIdx]);
+            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
         
             cublasSnrm2(*handle,
                         dictionaryMatrix->m,
