@@ -6,6 +6,7 @@ while (ksvdIter < maxKsvdIter)
 
     partition OMP {
         :norms = host_vector(patchesMatrix->n, 1);
+        :residualVec = noisePatches;
         while(ompIter < maxOmpIter)
             |#AntiqueWhite|DEVICE|
             #HotPink:proj = SGEMM(dictionary, residualVec);
@@ -23,8 +24,8 @@ while (ksvdIter < maxKsvdIter)
             endwhile;
             |DEVICE|
             while( inputIdx : indicesIter)
-                #HotPink:chosenAtomList[inputIdx][ ] = dict[maxs[inputIdx][ ];
-                #HotPink:copiedList[inputIdx][ ] = dict[maxs[inputIdx][ ];
+                #HotPink:chosenAtomList[inputIdx][ ] = dict[maxs[inputIdx]][ ];
+                #HotPink:copiedList[inputIdx][ ] = dict[maxs[inputIdx]][ ];
             endwhile;
             #HotPink:USV = GESVDA_STRIDED_BATCH(copiedList);
             #HotPink:copListInverse = V x TraspostaReciproca(S) x U "2x cublasSgemmStridedBatched";
@@ -57,11 +58,11 @@ while (ksvdIter < maxKsvdIter)
         :relevantDataIndicesCounter.copyOnHost();
         #HotPink:maxRelevant = MAX(relevantDataIndicesCounter[ ]);
         |DEVICE|
-        :selectSparseCode = device_vector(maxRelevant * sparseCode->m);
+        :selectSparseCode = new device_vector(maxRelevant * sparseCode->m);
         |HOST|
         while(currAtom < nAtoms)
             |DEVICE|
-            #HotPink: selectSparseCode = coeffs associted with relevantDataIndices[currAtom]
+            #HotPink: selectSparseCode = coeffs associted with relevantDataIndices[currAtom];
             :patch = 0;
             #HotPink:while(patch < relevantDataIndicesCounter)
                 #HotPink:selectSparseCode[patch][currAtom] = 0;

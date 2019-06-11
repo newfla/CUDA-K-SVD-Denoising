@@ -16,58 +16,24 @@
     
     "files": [
 
-        {"name" : "patch_c_Istanbul_luce.jpg",
-            "patchWidthDim" : 32,
-            "patchHeightDim" : 32,
-            "slidingWidth" : 8,
-            "slidingHeight" : 8
-           },
-   
-           {"name" : "patch_c_Istanbul_luce.jpg",
-            "patchWidthDim" : 32,
-            "patchHeightDim" : 32,
-            "slidingWidth" : 8,
-            "slidingHeight" : 8
-           },
-   
-           {"name" : "patch_c.jpg",
+        
+        {"name" : "patch_c_Istanbul.jpg",
             "patchWidthDim" : 128,
             "patchHeightDim" : 35,
-            "slidingWidth" : 32,
-            "slidingHeight" : 9
+            "slidingWidth" : 48,
+            "slidingHeight" : 14,
+            "atoms" : 5000,
+            "speckle": true
            },
-   
-           {"name" : "barbara.png",
-            "ref" : "barbaraRef.png",
-            "patchWidthDim" : 8,
-            "patchHeightDim" : 8,
-            "slidingWidth" : 2,
-            "slidingHeight" : 2
-           },
-
-
-
-
            
-        {"name" : "patch_c.jpg",
+        {"name" : "patch_c_Istanbul.jpg",
          "patchWidthDim" : 128,
          "patchHeightDim" : 35,
-         "slidingWidth" : 128,
-         "slidingHeight" : 35
-        },
+         "slidingWidth" : 32,
+         "slidingHeight" : 9,
+         "atoms" : 5800,
+         "speckle": true
 
-        {"name" : "patch.jpg",
-         "patchWidthDim" : 256,
-         "patchHeightDim" : 70,
-         "slidingWidth" : 256,
-         "slidingHeight" : 70
-        },
-        {"name" : "patch.jpg",
-         "patchWidthDim" : 512,
-         "patchHeightDim" : 140,
-         "slidingPatch" : 71680,
-         "slidingWidth" : 512,
-         "slidingHeight" : 140
         }
     ]
   }

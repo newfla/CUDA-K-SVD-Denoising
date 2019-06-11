@@ -135,9 +135,14 @@ class svd::CuSolverGeSvdJBatch: public svd::SvdCudaEngine{
 
 class svd::CuSolverGeSvdABatch: public svd::SvdCudaEngine{
 
+    public:
+        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices(int m, int n, int tot, thrust::device_ptr<float> ptr);
+
     protected:
         CuSolverGeSvdABatch();
         void init(baseUtl::Matrix*);
+        void init(int m, int n, int tot, thrust::device_ptr<float> ptr);
+
         void work();
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
         thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();

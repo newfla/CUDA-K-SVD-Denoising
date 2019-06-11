@@ -15,7 +15,7 @@ partition RebuildAfirstImage {
         :currPatch = 0;
         while(currPatch < nPatches)
             if(currPixel in currPatch?) then (yes)
-                :img[currPixel] = currPatchFindMatch[currPixel].value();
+                :img[currPixel] += currPatchFindMatch[currPixel].value();
                 :weightsPixel[currPixel]++;
             endif
             :currPatch++;
@@ -23,7 +23,6 @@ partition RebuildAfirstImage {
         :currPixel++;
     endwhile
      
-    #HotPink:tempImg = weight(img,pixelsWeight);
 }
 
 partition FindLamba {
