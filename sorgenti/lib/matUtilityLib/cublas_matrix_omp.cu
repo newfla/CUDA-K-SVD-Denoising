@@ -7,43 +7,51 @@ using namespace matUtl;
 using namespace thrust;
 using namespace thrust::placeholders;
 
-__global__ void copyData1Kernel(device_ptr<int> indicesIterDevice, device_ptr<int> maxs, device_ptr<int> chosenAtomIdxList, device_ptr<float> chosenAtomList, device_ptr<float> dict, int dictM, int dictN, int iter, int iters, int tot){
+__global__ void copyData1Kernel(device_ptr<int> indicesIterDevice, device_ptr<int> maxs, device_ptr<int> chosenAtomIdxList, device_ptr<int> chosenAtomIdxList2, int dictN, int iter, int iters, int tot, int stride){
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
     int inputIdx = indicesIterDevice[tid];
     int chosenAtomIdx = maxs[inputIdx];
+    int inputIdxStride = inputIdx + stride;
+    chosenAtomIdxList[(inputIdxStride * iters) + iter] = (dictN * inputIdxStride) + chosenAtomIdx;
+    chosenAtomIdxList2[(inputIdxStride * iters) + iter] = chosenAtomIdx;
     
-    chosenAtomIdxList[(inputIdx * iters) + iter] = (dictN * inputIdx) + chosenAtomIdx;
-    
-    for(int i=0; i<dictM; i++)
-        chosenAtomList[(inputIdx * iters * dictM) + (iter * dictM) + i] = dict[(chosenAtomIdx * dictM) + i];
+  //  for(int i=0; i<dictM; i++)
+   //     chosenAtomList[(inputIdxStride * iters * dictM) + (iter * dictM) + i] = dict[(chosenAtomIdx * dictM) + i];
 }
 
-__global__ void copyData2Kernel(device_ptr<int> indicesIterDevice, device_ptr<float> chosenAtomList, device_ptr<float> copiedList, int dictM, int iter, int iters, int tot){
+__global__ void copyData2Kernel(device_ptr<int> indicesIterDevice,  device_ptr<int> chosenAtomIdxList2, device_ptr<float> dict, device_ptr<float> copiedList, int dictM, int iter, int iters, int tot, int stride){
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
     int inputIdx = indicesIterDevice[tid];
-    for(int i=0; i < iter * dictM; i++)
-        copiedList[(dictM * tid * iter) + i] =  chosenAtomList[(inputIdx * iters * dictM) + i];
+    int inputIdxStride = inputIdx + stride;
+
+    for(int i = 0; i < iter; i++){
+        int chosenAtomIdx = chosenAtomIdxList2[(inputIdxStride * iters) + i];
+        for(int j = 0; j < dictM; j++){
+            copiedList[(dictM * tid * iter) + (i * dictM) + j] = dict[(dictM * chosenAtomIdx) + j];
+        }
+    }
+
+       // copiedList[(dictM * tid * iter) + i] =  chosenAtomList[((inputIdx + stride) * iters * dictM) + i];
 }
 
-__global__ void copyData3Kernel(device_ptr<float> weightList, device_ptr<float> cVector, device_ptr<int> indicesIterDevice, device_ptr<int> chosenAtomIdxList, int size, int iters, int tot){
+__global__ void copyData3Kernel(device_ptr<float> weightList, device_ptr<float> cVector, device_ptr<int> indicesIterDevice, device_ptr<int> chosenAtomIdxList, int size, int iters, int tot, int stride){
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
     int inputIdx = indicesIterDevice[tid];
 
     for (int i = 0; i < size; i++){
-        int idx = chosenAtomIdxList[(inputIdx * iters) + i]; 
+        int idx = chosenAtomIdxList[((inputIdx + stride) * iters) + i]; 
         cVector[idx] = weightList[(size * inputIdx) + i];
     }
     
 }
 
-__global__ void transformSMat(device_ptr<float> s, device_ptr<float> sVector, int n, int m, int tot)
-{
+__global__ void transformSMat(device_ptr<float> s, device_ptr<float> sVector, int n, int m, int tot){
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
@@ -86,6 +94,7 @@ void CuBlasMatrixOmp::finalize(){
 
     auto start = std::chrono::steady_clock::now();
 
+    cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);
     c = new Matrix(a->n, b->n, a->n, cVector);
 
     auto end = std::chrono::steady_clock::now();
@@ -103,28 +112,73 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     this->b = patchesMatrix;
     this->a = dictionaryMatrix;
     init();
+    cudaMemGetInfo( &free_byte, &total_byte );
+    std::cout<<"mem free1: "<<free_byte/1073741824.<<std::endl;
 
     auto start = std::chrono::steady_clock::now();
-    if(proj == NULL){
-        proj = new device_vector<float> (dictionaryMatrix->n * patchesMatrix->n);
-        projAbs = new device_vector<float> (dictionaryMatrix->n * patchesMatrix->n);
-        tempVec = new device_vector<float>(patchesMatrix->deviceVector->size());
-        maxs = new device_vector<int>(patchesMatrix->n);
-        tempMatMult = new device_vector<float>(patchesMatrix->n * maxIters * dictionaryMatrix->m);
-        pseudoInverse = new device_vector<float>(patchesMatrix->n * maxIters * dictionaryMatrix->m);
-        weightList = new device_vector<float>(patchesMatrix->n * maxIters);
-        alfaBeta = new device_vector<float>(2,1);
-        chosenAtomIdxList = new device_vector<int>(patchesMatrix->n * maxIters);
-        chosenAtomList = new device_vector<float>(patchesMatrix->n * maxIters * dictionaryMatrix->m);
 
-        alfaBeta->data()[1] = 0;
+    int iter = 0;
+    device_vector<float> normsDevice(patchesMatrix->n, 1);
+    host_vector<float> norms(patchesMatrix->n, 1);
+    device_vector<float> residualVec(patchesMatrix->deviceVector->begin(), patchesMatrix->deviceVector->end());
+    
+    cudaMemGetInfo( &free_byte, &total_byte );
+    std::cout<<"mem free2: "<<free_byte/1073741824.<<std::endl;
+
+    if(proj == NULL){
         blocks = patchesMatrix->n / 1024;
         blocks += (patchesMatrix->n % 1024 > 0) ? 1 : 0;
+
+        alfaBeta = new device_vector<float>(2,1);
+        chosenAtomIdxList = new device_vector<int>(patchesMatrix->n * maxIters);
+        chosenAtomIdxList2 = new device_vector<int>(patchesMatrix->n * maxIters);
+        tempVec = new device_vector<float>(patchesMatrix->deviceVector->size());
+        alfaBeta->data()[1] = 0;
+
+        cudaMemGetInfo( &free_byte, &total_byte );
+        std::cout<<"mem free3: "<<free_byte/1073741824.<<std::endl;
+
+        size_t spaceRequired = 2 * sizeof(float) * dictionaryMatrix->n * patchesMatrix->n; //proj + projAbs
+        spaceRequired += 2 * sizeof(int) * patchesMatrix->n; //maxs + indicesIterDevice
+        spaceRequired += 2 * sizeof(float) * patchesMatrix->n * maxIters * dictionaryMatrix->m; //tempMatMult + pseudoInverse
+        spaceRequired += sizeof(float) * patchesMatrix->n * maxIters; //weightList
+        spaceRequired += sizeof(float) * patchesMatrix->n; //normsDevice
+        spaceRequired += sizeof(float) * patchesMatrix->n * dictionaryMatrix->m * maxIters; // sVector
+        spaceRequired += sizeof(float) * patchesMatrix->n * dictionaryMatrix->m * maxIters; //copiedList
+        spaceRequired += sizeof(float) * patchesMatrix->n * dictionaryMatrix->m * dictionaryMatrix->m; //U
+        spaceRequired += sizeof(float) * patchesMatrix->n * maxIters; //S
+        spaceRequired += sizeof(float) * patchesMatrix->n * maxIters * maxIters; //VT
+
+        subIter = spaceRequired / free_byte;
+        subIter++;
+        subIter += (subIter == 1) ? 0 : 10;
+
+        int patchesXIter = patchesMatrix->n / subIter;
+        patchesXIter += (subIter == 1) ? 0 : 1;
+        std::cout<<"patchXiter: "<<patchesXIter<<std::endl;
+
+	    if(subIter>1 && patchesMatrix->n % patchesXIter == 0)
+	    subIter--;
+	    std::cout<<"subIter: "<<subIter<<std::endl;
+        patchesIter = new host_vector<int>(subIter, patchesXIter);
+
+        if(subIter > 1 && (patchesMatrix->n % subIter !=0)){
+            int temp = reduce(patchesIter->begin(), patchesIter->end() - 1);
+            std::cout<<"temp:"<<temp<<std::endl;
+            patchesIter->data()[subIter-1] = patchesMatrix->n - temp;
+        }
+
+        proj = new device_vector<float> (dictionaryMatrix->n * patchesXIter);
+        projAbs = new device_vector<float> (dictionaryMatrix->n * patchesXIter);
+        maxs = new device_vector<int>(patchesXIter);
+        tempMatMult = new device_vector<float>(patchesXIter * maxIters * dictionaryMatrix->m);
+        pseudoInverse = new device_vector<float>(patchesXIter * maxIters * dictionaryMatrix->m);
+        weightList = new device_vector<float>(patchesXIter * maxIters);
+
     }
 
-    device_vector<float> residualVec(patchesMatrix->deviceVector->begin(), patchesMatrix->deviceVector->end());
-    device_vector<float>normsDevice(patchesMatrix->n, 1);
-    host_vector<float>norms(patchesMatrix->n, 1);
+    cudaMemGetInfo( &free_byte, &total_byte ) ;
+    std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
 
     float *dictPtr = raw_pointer_cast(dictionaryMatrix->deviceVector->data());
     float *resPtr =  raw_pointer_cast(residualVec.data());
@@ -133,15 +187,11 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     float *tempPtr = raw_pointer_cast(tempVec->data());
     float *patsPtr = raw_pointer_cast(patchesMatrix->deviceVector->data());
     float *normsDevicePtr = raw_pointer_cast(normsDevice.data());
-    float* alfaBetaPtr = raw_pointer_cast(alfaBeta->data());
-    int *maxsPtr = raw_pointer_cast(maxs->data());
+    float *alfaBetaPtr = raw_pointer_cast(alfaBeta->data());
     float *tempMatMultPtr = raw_pointer_cast(tempMatMult->data());
     float *pseudoInversePtr = raw_pointer_cast(pseudoInverse->data());
     float *weightListPtr = raw_pointer_cast(weightList->data());
-
-    int iter = 0;
-    size_t free_byte, total_byte;
-    
+    int *maxsPtr = raw_pointer_cast(maxs->data());
     
      if(streams == NULL){
         streams = new host_vector<cudaStream_t>(maxStreams);
@@ -150,192 +200,203 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     }
    
     while(iter < maxIters){
+        std::cout<<"Iter:"<<iter<<std::endl;
+        int countPatches = 0;
+        host_vector<int>indicesIterGlobal;
+        int ppp = 0;
+        for(int maxPatches : *patchesIter){
+            ppp++;
+     	    cudaMemGetInfo( &free_byte, &total_byte ) ;
+            std::cout<<"SubIter: "<<ppp<<" / "<<subIter<<"    mem free: "<<free_byte/1073741824.<<std::endl;
+            cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);       
 
-        cublasSgemm(*handle,
-                    CUBLAS_OP_T,
-                    CUBLAS_OP_N,
-                    dictionaryMatrix->n,
-                    patchesMatrix->n,
-                    dictionaryMatrix->m,
-                    &alfa,
-                    dictPtr,
-                    dictionaryMatrix->ld,
-                    resPtr,
-                    patchesMatrix->ld,
-                    &beta,
-                    projPtr,
-                    dictionaryMatrix->n);
-
-        cudaDeviceSynchronize();
-
-        transform(proj->begin(), proj->end(), projAbs->begin(), abs_val());
-
-        cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
-
-        host_vector<int>indicesIter;
-
-        for(int inputIdx = 0; inputIdx < patchesMatrix->n; inputIdx++){
-
-            if(norms[inputIdx] < 0.001) continue;
-
-            indicesIter.push_back(inputIdx);
-
-            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
-
-            cublasIsamax(*handle,
-                         dictionaryMatrix->n,
-                         projAbsPtr + (inputIdx * dictionaryMatrix->n),
-                         1,
-                         maxsPtr + inputIdx);
-        }
-
-        cudaDeviceSynchronize();
-        transform(maxs->begin() , maxs->end(), maxs->begin()  , _1-1);
-
-        int size = iter + 1;
-
-        device_vector<int> indicesIterDevice = indicesIter;
-        copyData1Kernel<<<blocks, 1024>>> (indicesIterDevice.data(), maxs->data(),  chosenAtomIdxList->data(),  chosenAtomList->data(), dictionaryMatrix->deviceVector->data(), dictionaryMatrix->m, dictionaryMatrix->n, iter, maxIters, indicesIter.size());
-        cudaDeviceSynchronize();
-        int max = (iter + 1) * indicesIter.size();
-
-        device_vector<float>* copiedList = new device_vector<float>(max * dictionaryMatrix->m);
-        device_vector<float> sVector(indicesIter.size() * dictionaryMatrix->m * size,0);            
-        float *sVectorPtr = raw_pointer_cast(sVector.data());
-
-        copyData2Kernel<<<blocks, 1024>>>(indicesIterDevice.data(),  chosenAtomList->data(), copiedList->data(), dictionaryMatrix->m, size, maxIters, indicesIter.size());
-        cudaDeviceSynchronize();
-
-        //ChosenAtomList Pseudo-Inverse
-        Matrix* toPinvert = new Matrix(dictionaryMatrix->m, size, indicesIter.size(), copiedList);
-        SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDA_BATCH)); 
-        container->setMatrix(toPinvert);
-        host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
-        
-        cudaMemGetInfo( &free_byte, &total_byte ) ;
-        //std::cout<<"mem free5: "<<free_byte/1073741824.<<std::endl;
-
-        transformSMat<<<blocks, 1024>>>(usv[1]->deviceVector->data(), sVector.data(), size, dictionaryMatrix->m, indicesIter.size());
-        
-        cudaDeviceSynchronize();
-        cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);
-
-        cublasSgemmStridedBatched(*handle,
-                                  CUBLAS_OP_N,
-                                  CUBLAS_OP_N,
-                                  usv[2]->m,
-                                  usv[0]->m,
-                                  usv[2]->n,
-                                  &alfa,
-                                  raw_pointer_cast(usv[2]->deviceVector->data()),
-                                  usv[2]->m,
-                                  usv[2]->ld,
-                                  sVectorPtr,
-                                  usv[2]->m,
-                                  dictionaryMatrix->m * size,
-                                  &beta,
-                                  tempMatMultPtr,
-                                  usv[2]->m,
-                                  dictionaryMatrix->m * size,
-                                  indicesIter.size());
-
-        cudaDeviceSynchronize();
-
-        cublasSgemmStridedBatched(*handle,
-                                  CUBLAS_OP_N,
-                                  CUBLAS_OP_T,
-                                  usv[2]->m,
-                                  usv[0]->m,
-                                  usv[0]->m,
-                                  &alfa,
-                                  tempMatMultPtr,
-                                  usv[2]->m,
-                                  dictionaryMatrix->m * size,
-                                  raw_pointer_cast(usv[0]->deviceVector->data()),
-                                  usv[0]->m,
-                                  usv[0]->ld,
-                                  &beta,
-                                  pseudoInversePtr,
-                                  usv[2]->m,
-                                  dictionaryMatrix->m * size,
-                                  indicesIter.size());
-        cudaDeviceSynchronize();
-
-        delete container;
-        
-        int count = -1;
-        cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
-        for(int inputIdx: indicesIter){
-            
-            count++;
-            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
-
-            cublasSgemv(*handle,
+            cublasSgemm(*handle,
+                        CUBLAS_OP_T,
                         CUBLAS_OP_N,
-                        size,
+                        dictionaryMatrix->n,
+                        maxPatches,
                         dictionaryMatrix->m,
-                        alfaBetaPtr,
-                        pseudoInversePtr + (dictionaryMatrix->m * size * count),
-                        size,
-                        patsPtr + (inputIdx * patchesMatrix->m),
-                        1,
-                        alfaBetaPtr + 1,
-                        weightListPtr + (size * inputIdx),
-                        1);
-        }
+                        &alfa,
+                        dictPtr,
+                        dictionaryMatrix->ld,
+                        resPtr + (countPatches * dictionaryMatrix->m),
+                        patchesMatrix->ld,
+                        &beta,
+                        projPtr,
+                        dictionaryMatrix->n);
 
-        cudaDeviceSynchronize();
-        copyData3Kernel<<<blocks,1024>>>(weightList->data(), cVector->data(), indicesIterDevice.data(),  chosenAtomIdxList->data(), size, maxIters, indicesIter.size());
-        cudaDeviceSynchronize();
-        
-        for(int inputIdx: indicesIter){
+            cudaDeviceSynchronize();
+
+            transform(proj->begin(), proj->end(), projAbs->begin(), abs_val());
+
+             cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
+
+            host_vector<int>indicesIter;
+
+            for(int inputIdx = 0; inputIdx < maxPatches; inputIdx++){
+
+                if(norms[inputIdx + countPatches] < 0.001) continue;
+
+                indicesIter.push_back(inputIdx);
+                indicesIterGlobal.push_back(inputIdx + countPatches);
+
+                cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+
+                cublasIsamax(*handle,
+                            dictionaryMatrix->n,
+                            projAbsPtr + (inputIdx  * dictionaryMatrix->n),
+                            1,
+                            maxsPtr + inputIdx);
+            }
+
+            cudaDeviceSynchronize();
+            transform(maxs->begin() , maxs->end(), maxs->begin()  , _1 - 1);
+
+            int size = iter + 1;
+            int max = size * indicesIter.size();
+ 
+            device_vector<int> indicesIterDevice = indicesIter;
+            copyData1Kernel<<<blocks, 1024>>> (indicesIterDevice.data(), maxs->data(),  chosenAtomIdxList->data(), chosenAtomIdxList2->data(), dictionaryMatrix->n, iter, maxIters, indicesIter.size(), countPatches);
+            cudaDeviceSynchronize();
+  
+            device_vector<float>* copiedList = new device_vector<float>(max * dictionaryMatrix->m);
+            device_vector<float> sVector(indicesIter.size() * dictionaryMatrix->m * size,0);            
+            float *sVectorPtr = raw_pointer_cast(sVector.data());
+
+            copyData2Kernel<<<blocks, 1024>>>(indicesIterDevice.data(), chosenAtomIdxList2->data(), dictionaryMatrix->deviceVector->data(), copiedList->data(), dictionaryMatrix->m, size, maxIters, indicesIter.size(), countPatches);
+            cudaDeviceSynchronize();
+ 
+            //ChosenAtomList Pseudo-Inverse
+            Matrix* toPinvert = new Matrix(dictionaryMatrix->m, size, indicesIter.size(), copiedList);
+            SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDA_BATCH)); 
+            container->setMatrix(toPinvert);
+            host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
+            cudaMemGetInfo( &free_byte, &total_byte ) ;
+            std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
+            transformSMat<<<blocks, 1024>>>(usv[1]->deviceVector->data(), sVector.data(), size, dictionaryMatrix->m, indicesIter.size());
             
-            cudaStreamSynchronize(streams->data()[inputIdx % maxStreams]);
-            
-            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+            cudaDeviceSynchronize();
+            cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);
 
-            cublasSgemv(*handle,
-                        CUBLAS_OP_N,
-                        dictionaryMatrix->m,
-                        size,
-                        alfaBetaPtr,
-                        raw_pointer_cast(chosenAtomList->data()) + (inputIdx * dictionaryMatrix->m * maxIters),
-                        dictionaryMatrix->m,
-                        weightListPtr + (size * inputIdx),
-                        1,
-                        alfaBetaPtr + 1,
-                        tempPtr + (inputIdx * dictionaryMatrix->m),
-                        1); 
-        }        
+            cublasSgemmStridedBatched(*handle,
+                                    CUBLAS_OP_N,
+                                    CUBLAS_OP_N,
+                                    usv[2]->m,
+                                    usv[0]->m,
+                                    usv[2]->n,
+                                    &alfa,
+                                    raw_pointer_cast(usv[2]->deviceVector->data()),
+                                    usv[2]->m,
+                                    usv[2]->ld,
+                                    sVectorPtr,
+                                    usv[2]->m,
+                                    dictionaryMatrix->m * size,
+                                    &beta,
+                                    tempMatMultPtr,
+                                    usv[2]->m,
+                                    dictionaryMatrix->m * size,
+                                    indicesIter.size());
 
-        cudaDeviceSynchronize();
+            cudaDeviceSynchronize();
 
+            cublasSgemmStridedBatched(*handle,
+                                    CUBLAS_OP_N,
+                                    CUBLAS_OP_T,
+                                    usv[2]->m,
+                                    usv[0]->m,
+                                    usv[0]->m,
+                                    &alfa,
+                                    tempMatMultPtr,
+                                    usv[2]->m,
+                                    dictionaryMatrix->m * size,
+                                    raw_pointer_cast(usv[0]->deviceVector->data()),
+                                    usv[0]->m,
+                                    usv[0]->ld,
+                                    &beta,
+                                    pseudoInversePtr,
+                                    usv[2]->m,
+                                    dictionaryMatrix->m * size,
+                                    indicesIter.size());
+            cudaDeviceSynchronize();
+             
+            int count = -1;
+            cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
+            for(int inputIdx: indicesIter){
+                
+                count++;
+                cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+
+                cublasSgemv(*handle,
+                            CUBLAS_OP_N,
+                            size,
+                            dictionaryMatrix->m,
+                            alfaBetaPtr,
+                            pseudoInversePtr + (dictionaryMatrix->m * size * count),
+                            size,
+                            patsPtr + ((inputIdx + countPatches) * patchesMatrix->m),
+                            1,
+                            alfaBetaPtr + 1,
+                            weightListPtr + (size * inputIdx),
+                            1);
+            }
+ 
+            cudaDeviceSynchronize();
+            copyData3Kernel<<<blocks,1024>>>(weightList->data(), cVector->data(), indicesIterDevice.data(),  chosenAtomIdxList->data(), size, maxIters, indicesIter.size(), countPatches);
+            cudaDeviceSynchronize();
+ 
+            cudaMemGetInfo( &free_byte, &total_byte ) ;
+            std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
+
+            int inputIdxCounter = 0;
+            for(int inputIdx: indicesIter){
+                
+                cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+
+                cublasSgemv(*handle,
+                            CUBLAS_OP_N,
+                            dictionaryMatrix->m,
+                            size,
+                            alfaBetaPtr,
+                            raw_pointer_cast(copiedList->data()) + (inputIdxCounter * dictionaryMatrix->m * size),
+                            dictionaryMatrix->m,
+                            weightListPtr + (size * inputIdx),
+                            1,
+                            alfaBetaPtr + 1,
+                            tempPtr + ((inputIdx + countPatches) * dictionaryMatrix->m),
+                            1); 
+                inputIdxCounter++;
+            }        
+            cudaDeviceSynchronize();
+            delete container; 
+            countPatches += maxPatches;
+        }    
+    
         transform(patchesMatrix->deviceVector->begin(),
                   patchesMatrix->deviceVector->end(),
                   tempVec->begin(),
                   residualVec.begin(),
                   minus<float>());
-       // std::cout<<"----------------------------------\n\n";
 
-        for(int inputIdx : indicesIter){ //n == #columns == # patches
+            for(int inputIdx : indicesIterGlobal){ //n == #columns == # patches
 
-            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
-        
-            cublasSnrm2(*handle,
-                        dictionaryMatrix->m,
-                        resPtr + (inputIdx * patchesMatrix->m),
-                        1,
-                        normsDevicePtr + inputIdx);
-        }
-        cudaDeviceSynchronize();
-        norms = normsDevice;
-        iter++;
-        cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);
+                cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+            
+                cublasSnrm2(*handle,
+                            dictionaryMatrix->m,
+                            resPtr + (inputIdx * patchesMatrix->m),
+                            1,
+                            normsDevicePtr + inputIdx);
+            }
+            cudaDeviceSynchronize();
+            norms = normsDevice;
+            iter++;
     }
+
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     finalize();
+    cudaMemGetInfo( &free_byte, &total_byte );
+    std::cout<<"mem free5: "<<free_byte/1073741824.<<std::endl;
     return c;
-
 }

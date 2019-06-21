@@ -150,6 +150,7 @@ void CuSolverGeSvdABatch::work(){
 thrust::host_vector<Matrix*> CuSolverGeSvdABatch::getOutputMatrices(){
     
     cudaFree(deviceInfo);
+    cudaFree(deviceWork);
     return SvdCudaEngine::getOutputMatrices(); 
 }
 

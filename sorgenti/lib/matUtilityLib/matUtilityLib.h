@@ -108,13 +108,16 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
     private:
         static thrust::host_vector<cudaStream_t>* streams;
         const static int maxStreams = 4;
-        int blocks = 0;
+        int blocks = 0, subIter;
+        size_t free_byte, total_byte;
+        thrust::host_vector<int>* patchesIter = NULL;
         thrust::device_vector<float>* proj = NULL;
         thrust::device_vector<float>* projAbs = NULL;
         thrust::device_vector<float>* tempVec = NULL;
         thrust::device_vector<int>* maxs = NULL;
         thrust::device_vector<float>* alfaBeta = NULL;
         thrust::device_vector<int>* chosenAtomIdxList = NULL;
+        thrust::device_vector<int>* chosenAtomIdxList2 = NULL;
         thrust::device_vector<float>* chosenAtomList = NULL;
         thrust::device_vector<float>* tempMatMult = NULL;
         thrust::device_vector<float>* pseudoInverse = NULL;

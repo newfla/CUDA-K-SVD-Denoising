@@ -431,5 +431,5 @@ void CudaKSvdDenoiser::createImage(){
     auto end = std::chrono::steady_clock::now();
     auto tot1 = end - start;
 
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(tot1).count()<<" ms"<<std::endl<<std::endl;
+    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;
 }
