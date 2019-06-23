@@ -76,9 +76,9 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
 
     std::string fileName, inputFolder, outputFolder, refFile;
     std::vector<std::string> skip ={"..", "."};
-    int globalPatchWidthDim, globalPatchHeightDim, globalSlidingWidth, globalSlidingHeight, globalAtoms, globalIter, globalOmpIter;
+    int globalPatchWidthDim, globalPatchHeightDim, globalSlidingWidth, globalSlidingHeight, globalAtoms, globalIter, globalOmpIter, globalMinOmpIterBatch;
     bool globalSpeckle;
-    int patchWidthDim, patchHeightDim, slidingWidth, slidingHeight, atoms, iter, ompIter;
+    int patchWidthDim, patchHeightDim, slidingWidth, slidingHeight, atoms, iter, ompIter, minOmpIterBatch;
     bool speckle;
     std::fstream streamJson(jsonFile);
 
@@ -98,6 +98,7 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     globalAtoms = (int) globalParams.get<Number> ("atoms");
     globalIter = (int) globalParams.get<Number> ("ksvdIter");
     globalOmpIter = (int) globalParams.get<Number> ("ompIter");
+    globalMinOmpIterBatch= (int) globalParams.get<Number> ("minOmpIterBatch");
 
     BatchDenoiser* batchDenoiser = new BatchDenoiser();
     batchDenoiser->times.push_back(new TimeElapsed());
@@ -115,6 +116,7 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         fileName = (std::string) file.get<std::string>("name");
         refFile = (std::string) file.get<std::string>("ref","");
         speckle = file.get<bool>("speckle",globalSpeckle);
+        minOmpIterBatch = (int) file.get<Number> ("minOmpIterBatch", globalMinOmpIterBatch);
         
         Denoiser* denoiser = Denoiser::factory(type, inputFolder + "/" + fileName, outputFolder + "/" + std::to_string(patchWidthDim) + "_" + std::to_string(patchHeightDim) + "_" + fileName);
         
@@ -127,6 +129,7 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         denoiser->atoms = atoms;
         denoiser->iter = iter;
         denoiser->speckle = speckle;
+        denoiser->minOmpIterBatch = minOmpIterBatch;
         
         batchDenoiser->denoisers.push_back(denoiser);
         batchDenoiser->times.push_back(denoiser->getTimeElapsed());

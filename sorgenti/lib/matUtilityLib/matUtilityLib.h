@@ -99,6 +99,7 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         int maxIters = 5;
+        int minOmpIterBatch = 0;
 
     protected:
         CuBlasMatrixOmp();
@@ -107,7 +108,7 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
         
     private:
         static thrust::host_vector<cudaStream_t>* streams;
-        const static int maxStreams = 4;
+        const static int maxStreams = 16;
         int blocks = 0, subIter;
         size_t free_byte, total_byte;
         thrust::host_vector<int>* patchesIter = NULL;

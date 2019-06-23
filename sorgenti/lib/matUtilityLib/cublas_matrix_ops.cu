@@ -23,6 +23,7 @@ void CuBlasMatrixOps::init(){
     if(handle == NULL){   
         handle = new cublasHandle_t();
         cublasCreate(handle);
+        std::cout<<"Creo handle"<<std::endl;
     }
 
     if(a->deviceVector == NULL)
@@ -37,9 +38,8 @@ void CuBlasMatrixOps::init(){
 // Clear cuBlas additional data
 //*****************************
 void CuBlasMatrixOps::finalize(){
-    if(handle == NULL)
-        return;
-
-    cublasDestroy(*handle);
-    handle = NULL;
+    if(handle != NULL){
+        cublasDestroy(*handle);
+        handle = NULL;
+    }
 }

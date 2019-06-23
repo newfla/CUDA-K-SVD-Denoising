@@ -37,6 +37,7 @@ class denoising::Denoiser{
         int ompIter = 5;
         int atoms = 256;
         int iter = 10;
+        int minOmpIterBatch = 0;
         float sigma = 25;
         bool speckle = false;
         std::string refImage;
@@ -76,14 +77,12 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         baseUtl::Matrix* noisePatches = NULL;
         baseUtl::Matrix* dictionary = NULL;
         baseUtl::Matrix* sparseCode = NULL;
-        thrust::device_vector<int>* relevantDataIndices = NULL;
-        thrust::device_vector<int>* relevantDataIndicesCounter = NULL;
         
         CudaKSvdDenoiser();
         svd::SvdContainer* buildSvdContainer();
         void createPatches();
         void initDictionary();
-        void updateDictionary(bool init);
+        void updateDictionary();
         void createImage();
         void kSvd();
 
@@ -110,22 +109,22 @@ class denoising::BatchDenoiser{
         BatchDenoiser();
 };
 
+template <typename T>
 struct myLog
 {
   __host__ __device__
-  bool operator()(float x)
-  {
-    return log2f(x);
-  }
+    T operator()(const T& x) const{
+        return log2(x);
+    }
 };
 
+template <typename T>
 struct myExp
 {
   __host__ __device__
-  bool operator()(float x)
-  {
-    return powf(2.,x);
-  }
+    T operator()(const T& x) const{
+        return pow(2.,x);
+    }
 };
 
 #endif

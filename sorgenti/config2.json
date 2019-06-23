@@ -11,29 +11,15 @@
         "atoms" : 256,
         "ompIter": 5,
         "ksvdIter" : 1,
-        "speckle" : true
+        "speckle" : false,
+        "minOmpIterBatch":0
     },
     
     "files": [
-
-        
-        {"name" : "patch_c_Istanbul.jpg",
-            "patchWidthDim" : 128,
-            "patchHeightDim" : 35,
-            "slidingWidth" : 48,
-            "slidingHeight" : 14,
-            "atoms" : 5000,
-            "speckle": true
-           },
-           
-        {"name" : "patch_c_Istanbul.jpg",
-         "patchWidthDim" : 128,
-         "patchHeightDim" : 35,
-         "slidingWidth" : 32,
-         "slidingHeight" : 9,
-         "atoms" : 5800,
-         "speckle": true
-
-        }
+        {"name" : "istanbul128.jpg",
+            "patchWidthDim" : 4,
+            "patchHeightDim" : 4},
+        {"name" : "istanbul256.jpg"},
+        {"name" : "istanbul512.jpg"}
     ]
   }

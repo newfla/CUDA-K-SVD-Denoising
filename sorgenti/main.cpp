@@ -54,7 +54,7 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testBatchDenoiser(){
-    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/config.json");
+    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/config2.json");
     batchDenoiser->seqBatchDenoising();
 
     host_vector<baseUtl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();

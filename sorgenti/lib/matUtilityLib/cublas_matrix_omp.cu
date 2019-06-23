@@ -100,7 +100,9 @@ void CuBlasMatrixOmp::finalize(){
     auto end = std::chrono::steady_clock::now();
     timeElapsed->finalize = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 }
+
 thrust::host_vector<cudaStream_t>* matUtl::CuBlasMatrixOmp::streams = NULL;
+
 // **********************************************************************
 // MATCHING PURSUIT ALGORITM (OMP) FOR SPARSE CODING 
 // Input:  + patchesMatrix [feature per patch * number of patches] 
@@ -112,8 +114,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     this->b = patchesMatrix;
     this->a = dictionaryMatrix;
     init();
-    cudaMemGetInfo( &free_byte, &total_byte );
-    std::cout<<"mem free1: "<<free_byte/1073741824.<<std::endl;
 
     auto start = std::chrono::steady_clock::now();
 
@@ -121,9 +121,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     device_vector<float> normsDevice(patchesMatrix->n, 1);
     host_vector<float> norms(patchesMatrix->n, 1);
     device_vector<float> residualVec(patchesMatrix->deviceVector->begin(), patchesMatrix->deviceVector->end());
-    
-    cudaMemGetInfo( &free_byte, &total_byte );
-    std::cout<<"mem free2: "<<free_byte/1073741824.<<std::endl;
 
     if(proj == NULL){
         blocks = patchesMatrix->n / 1024;
@@ -135,8 +132,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         tempVec = new device_vector<float>(patchesMatrix->deviceVector->size());
         alfaBeta->data()[1] = 0;
 
-        cudaMemGetInfo( &free_byte, &total_byte );
-        std::cout<<"mem free3: "<<free_byte/1073741824.<<std::endl;
+        cudaMemGetInfo(&free_byte, &total_byte);
 
         size_t spaceRequired = 2 * sizeof(float) * dictionaryMatrix->n * patchesMatrix->n; //proj + projAbs
         spaceRequired += 2 * sizeof(int) * patchesMatrix->n; //maxs + indicesIterDevice
@@ -151,20 +147,17 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
         subIter = spaceRequired / free_byte;
         subIter++;
-        subIter += (subIter == 1) ? 0 : 10;
+        subIter += (subIter == 1) ? 0 : minOmpIterBatch;
 
         int patchesXIter = patchesMatrix->n / subIter;
         patchesXIter += (subIter == 1) ? 0 : 1;
-        std::cout<<"patchXiter: "<<patchesXIter<<std::endl;
 
 	    if(subIter>1 && patchesMatrix->n % patchesXIter == 0)
 	    subIter--;
-	    std::cout<<"subIter: "<<subIter<<std::endl;
         patchesIter = new host_vector<int>(subIter, patchesXIter);
 
         if(subIter > 1 && (patchesMatrix->n % subIter !=0)){
             int temp = reduce(patchesIter->begin(), patchesIter->end() - 1);
-            std::cout<<"temp:"<<temp<<std::endl;
             patchesIter->data()[subIter-1] = patchesMatrix->n - temp;
         }
 
@@ -176,9 +169,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         weightList = new device_vector<float>(patchesXIter * maxIters);
 
     }
-
-    cudaMemGetInfo( &free_byte, &total_byte ) ;
-    std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
 
     float *dictPtr = raw_pointer_cast(dictionaryMatrix->deviceVector->data());
     float *resPtr =  raw_pointer_cast(residualVec.data());
@@ -200,15 +190,12 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     }
    
     while(iter < maxIters){
-        std::cout<<"Iter:"<<iter<<std::endl;
         int countPatches = 0;
         host_vector<int>indicesIterGlobal;
         int ppp = 0;
         for(int maxPatches : *patchesIter){
             ppp++;
-     	    cudaMemGetInfo( &free_byte, &total_byte ) ;
-            std::cout<<"SubIter: "<<ppp<<" / "<<subIter<<"    mem free: "<<free_byte/1073741824.<<std::endl;
-            cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);       
+     	    cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);       
 
             cublasSgemm(*handle,
                         CUBLAS_OP_T,
@@ -254,6 +241,10 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
             int size = iter + 1;
             int max = size * indicesIter.size();
+            if(max == 0){
+                countPatches += maxPatches;
+                continue;
+            }
  
             device_vector<int> indicesIterDevice = indicesIter;
             copyData1Kernel<<<blocks, 1024>>> (indicesIterDevice.data(), maxs->data(),  chosenAtomIdxList->data(), chosenAtomIdxList2->data(), dictionaryMatrix->n, iter, maxIters, indicesIter.size(), countPatches);
@@ -271,8 +262,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             SvdContainer* container = new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDA_BATCH)); 
             container->setMatrix(toPinvert);
             host_vector<Matrix*> usv = container->getDeviceOutputMatrices();
-            cudaMemGetInfo( &free_byte, &total_byte ) ;
-            std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
             transformSMat<<<blocks, 1024>>>(usv[1]->deviceVector->data(), sVector.data(), size, dictionaryMatrix->m, indicesIter.size());
             
             cudaDeviceSynchronize();
@@ -344,8 +333,8 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             copyData3Kernel<<<blocks,1024>>>(weightList->data(), cVector->data(), indicesIterDevice.data(),  chosenAtomIdxList->data(), size, maxIters, indicesIter.size(), countPatches);
             cudaDeviceSynchronize();
  
-            cudaMemGetInfo( &free_byte, &total_byte ) ;
-            std::cout<<"mem free4: "<<free_byte/1073741824.<<std::endl;
+            //cudaMemGetInfo( &free_byte, &total_byte ) ;
+           // std::cout<<"   mem freeAfter: "<<free_byte/1073741824.<<std::endl;
 
             int inputIdxCounter = 0;
             for(int inputIdx: indicesIter){
@@ -396,7 +385,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     finalize();
-    cudaMemGetInfo( &free_byte, &total_byte );
-    std::cout<<"mem free5: "<<free_byte/1073741824.<<std::endl;
+    //cudaMemGetInfo( &free_byte, &total_byte );
+    //std::cout<<"\nmem free5: "<<free_byte/1073741824.<<std::endl;
     return c;
 }
