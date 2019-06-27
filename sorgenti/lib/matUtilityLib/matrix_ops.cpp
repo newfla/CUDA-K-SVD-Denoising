@@ -10,7 +10,8 @@ MatrixOps::MatrixOps(){}
 //  Free Matrix* acquired (HOST/DEVICE) 
 //*************************************
 MatrixOps::~MatrixOps(){
-    delete c;
+    if(c!= NULL)
+        delete c;
 }
 
 //**************************************

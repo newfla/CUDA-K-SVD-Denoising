@@ -12,7 +12,9 @@
         "ompIter": 5,
         "ksvdIter" : 1,
         "speckle" : false,
-        "minOmpIterBatch":0
+        "minOmpIterBatch":0,
+        "subImageWidthDim":0,
+        "subImageHeightDim":0
     },
 
     "files": [

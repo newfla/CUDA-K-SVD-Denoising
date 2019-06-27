@@ -192,9 +192,8 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     while(iter < maxIters){
         int countPatches = 0;
         host_vector<int>indicesIterGlobal;
-        int ppp = 0;
+
         for(int maxPatches : *patchesIter){
-            ppp++;
      	    cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_HOST);       
 
             cublasSgemm(*handle,
@@ -216,7 +215,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
 
             transform(proj->begin(), proj->end(), projAbs->begin(), abs_val());
 
-             cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
+            cublasSetPointerMode(*handle, CUBLAS_POINTER_MODE_DEVICE);
 
             host_vector<int>indicesIter;
 
@@ -332,9 +331,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             cudaDeviceSynchronize();
             copyData3Kernel<<<blocks,1024>>>(weightList->data(), cVector->data(), indicesIterDevice.data(),  chosenAtomIdxList->data(), size, maxIters, indicesIter.size(), countPatches);
             cudaDeviceSynchronize();
- 
-            //cudaMemGetInfo( &free_byte, &total_byte ) ;
-           // std::cout<<"   mem freeAfter: "<<free_byte/1073741824.<<std::endl;
 
             int inputIdxCounter = 0;
             for(int inputIdx: indicesIter){
@@ -385,7 +381,60 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
     finalize();
-    //cudaMemGetInfo( &free_byte, &total_byte );
-    //std::cout<<"\nmem free5: "<<free_byte/1073741824.<<std::endl;
     return c;
+}
+
+//******************************************************
+//  Destructor
+//  Free data on HOST/DEVICE
+//*****************************************************
+CuBlasMatrixOmp::~CuBlasMatrixOmp(){
+
+    cVector = NULL;
+    c = NULL;
+
+    if(patchesIter != NULL)
+        delete patchesIter->data();
+
+    if(proj != NULL){
+        proj->clear();
+        proj->shrink_to_fit();
+        delete proj;
+
+        projAbs->clear();
+        projAbs->shrink_to_fit();
+        delete projAbs;
+
+        tempVec->clear();
+        tempVec->shrink_to_fit();
+        delete tempVec;
+
+        maxs->clear();
+        maxs->shrink_to_fit();
+        delete maxs;
+        
+        alfaBeta->clear();
+        alfaBeta->shrink_to_fit();
+        delete alfaBeta;
+        
+        chosenAtomIdxList->clear();
+        chosenAtomIdxList->shrink_to_fit();
+        delete chosenAtomIdxList;
+        
+        chosenAtomIdxList2->clear();
+        chosenAtomIdxList2->shrink_to_fit();
+        delete chosenAtomIdxList2;
+
+        tempMatMult->clear();
+        tempMatMult->shrink_to_fit();
+        delete tempMatMult;
+
+        pseudoInverse->clear();
+        pseudoInverse->shrink_to_fit();
+        delete pseudoInverse;
+
+        weightList->clear();
+        weightList->shrink_to_fit();
+        delete weightList;
+  }
 }

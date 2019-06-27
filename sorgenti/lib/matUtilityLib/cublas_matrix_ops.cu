@@ -23,7 +23,6 @@ void CuBlasMatrixOps::init(){
     if(handle == NULL){   
         handle = new cublasHandle_t();
         cublasCreate(handle);
-        std::cout<<"Creo handle"<<std::endl;
     }
 
     if(a->deviceVector == NULL)

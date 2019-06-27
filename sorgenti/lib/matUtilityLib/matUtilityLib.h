@@ -100,6 +100,7 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
         int maxIters = 5;
         int minOmpIterBatch = 0;
+        ~CuBlasMatrixOmp();
 
     protected:
         CuBlasMatrixOmp();
@@ -119,7 +120,6 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
         thrust::device_vector<float>* alfaBeta = NULL;
         thrust::device_vector<int>* chosenAtomIdxList = NULL;
         thrust::device_vector<int>* chosenAtomIdxList2 = NULL;
-        thrust::device_vector<float>* chosenAtomList = NULL;
         thrust::device_vector<float>* tempMatMult = NULL;
         thrust::device_vector<float>* pseudoInverse = NULL;
         thrust::device_vector<float>* weightList = NULL;

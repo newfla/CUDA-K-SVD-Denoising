@@ -133,18 +133,85 @@ bool CudaKSvdDenoiser::saveImage(){
 bool CudaKSvdDenoiser::internalDenoising(){
 
     auto start = std::chrono::steady_clock::now();
+   // size_t free_byte, total_byte;
 
-    //Divide image in patches column majhostor of fixed dims
-    createPatches();
+    if(subImageWidthDim != 0 && subImageHeightDim != 0){
+        int strideHeight = subImageHeightDim;
+        int strideWidth = subImageWidthDim;
+        std::swap(subImageHeightDim, patchHeightDim);
+        std::swap(subImageWidthDim, patchWidthDim);
+        std::swap(slidingHeight, strideHeight);
+        std::swap(slidingWidth, strideWidth);
 
-    //Init Dict
-    initDictionary();
+        createPatches(false);
+        Matrix* imagePatches = noisePatches;
+        Matrix* inputMatrixPointer = inputMatrix;
 
-    //Start #iter K-SVD
-    kSvd();
+        std::swap(subImageHeightDim, patchHeightDim);
+        std::swap(subImageWidthDim, patchWidthDim);
+        std::swap(slidingHeight, strideHeight);
+        std::swap(slidingWidth, strideWidth);
+        CImg<float>* tempImage = new CImg<float>(subImageHeightDim, subImageWidthDim);
 
-    //Rebuild originalImage
-    createImage();
+        for(int i = 0; i < imagePatches->n; i++){
+            
+            std::cout<<"subImage: "<<i+1<<" / "<<imagePatches->n<<std::endl;
+
+            //Preapare SubImage
+            host_vector<float>* subImage = new host_vector<float>(imagePatches->hostVector->begin() + (imagePatches->m * i), imagePatches->hostVector->begin() + (imagePatches->m * (i+1)));
+           
+            inputMatrix = new Matrix(subImageHeightDim, subImageWidthDim, subImageHeightDim, subImage->data()); 
+              
+            tempImage->_data = subImage->data();
+            sigma = tempImage->variance_noise();
+            
+            //Divide image in patches column majhostor of fixed dims
+            createPatches(true);
+            
+            //Init Dict
+            initDictionary();
+
+            //Start #iter K-SVD
+            kSvd();
+
+            //Rebuild originalImage
+            createImage(false);
+
+            copy(outputMatrix->hostVector->begin(), outputMatrix->hostVector->end(), imagePatches->hostVector->begin() + (imagePatches->m * i));
+            delete outputMatrix;
+            delete sparseCode;
+            delete dictionary;
+            delete noisePatches;
+            delete inputMatrix;
+
+            //cudaMemGetInfo( &free_byte, &total_byte );
+            //std::cout<<"\nmem free5: "<<free_byte/1073741824.<<std::endl;
+        }
+        createImageFromSubImages(imagePatches, inputMatrixPointer);
+
+        delete inputMatrixPointer;
+        delete imagePatches;
+        delete tempImage;
+    }else{
+
+        //Divide image in patches column majhostor of fixed dims
+        createPatches(true);
+
+        //Init Dict
+        initDictionary();
+
+        //Start #iter K-SVD
+        kSvd();
+
+        //Rebuild originalImage
+        createImage(true);
+
+        delete sparseCode;
+        delete dictionary;
+        delete noisePatches;
+    }
+
+    
 
     CuBlasMatrixOps::finalize();
     SvdCudaEngine::finalize();
@@ -158,9 +225,9 @@ bool CudaKSvdDenoiser::internalDenoising(){
 //**********************************************************************************************
 //  Divide image in square patches column major of fixed dims (patchWidthDim x patchHeightDim)
 //*********************************************************************************************
-void CudaKSvdDenoiser::createPatches(){
+void CudaKSvdDenoiser::createPatches(bool transfer){
 
-    std::cout<<"Create Patches"<<std::endl;
+   //std::cout<<"Create Patches"<<std::endl;
 
     auto start = std::chrono::steady_clock::now();
 
@@ -168,10 +235,9 @@ void CudaKSvdDenoiser::createPatches(){
     host_vector<float>* patchesHost = new host_vector<float>();
 
     //Create patch division on host
+    for(int i = 0; i + patchHeightDim <= inputMatrix->n; i+= slidingHeight){ 
 
-    for(int i = 0; i + patchHeightDim <= inputMatrix->n; i+= slidingHeight){ //n = ImageWidth
-
-        for(j = 0; j + patchWidthDim <= inputMatrix->m; j+= slidingWidth){ // m = ImageHeight
+        for(j = 0; j + patchWidthDim <= inputMatrix->m; j+= slidingWidth){ 
 
             int startPatch = (i * inputMatrix->m) + j;
 
@@ -184,15 +250,16 @@ void CudaKSvdDenoiser::createPatches(){
     j = patchesHost->size() / i;
     noisePatches = new Matrix(i, j, i, patchesHost);    
 
-    noisePatches->copyOnDevice();
+    if(transfer)
+        noisePatches->copyOnDevice();
     
-    std::cout<<"    # Patches: "<<j<<"  Dim: "<<i<<std::endl;
+    //std::cout<<"    # Patches: "<<j<<"  Dim: "<<i<<std::endl;
 
     std::swap(inputMatrix->m, inputMatrix->n);
     inputMatrix->ld = inputMatrix->m;
     
     auto end = std::chrono::steady_clock::now();
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(end-start).count()<<" s"<<std::endl<<std::endl;
+    //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(end-start).count()<<" s"<<std::endl<<std::endl;
 }
 
 //*************************************************************************************************************
@@ -200,12 +267,12 @@ void CudaKSvdDenoiser::createPatches(){
 //************************************************************************************************************
 void CudaKSvdDenoiser::initDictionary(){
 
-    std::cout<<"Init Dictionary"<<std::endl;
+    //std::cout<<"Init Dictionary"<<std::endl;
 
     auto start = std::chrono::steady_clock::now();
     int dim = patchWidthDim * patchHeightDim;
     int offset = 0;//dim * (noisePatches->n / 2);
-    device_vector<float> * dict = new device_vector<float>(noisePatches->hostVector->begin() + offset, noisePatches->hostVector->begin() + offset + (dim * atoms));
+    device_vector<float>* dict = new device_vector<float>(noisePatches->hostVector->begin() + offset, noisePatches->hostVector->begin() + offset + (dim * atoms));
 
     dictionary = new Matrix(dim, atoms, dim, dict);
 
@@ -216,7 +283,7 @@ void CudaKSvdDenoiser::initDictionary(){
     normalizeDictKernel<<<blocks, 1024>>>(dictionary->deviceVector->data(), dim, atoms);
     cudaDeviceSynchronize();
     auto end = std::chrono::steady_clock::now();
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;
+    //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count()<<" ms"<<std::endl<<std::endl;
 }
 
 //******************************************************
@@ -298,13 +365,10 @@ void CudaKSvdDenoiser::updateDictionary(){
                   make_permutation_iterator(sparseCode->deviceVector->begin(), idxSeq.begin()),
                   -1.f * usv[1]->deviceVector->data()[0] *_1);
 
-       // offset += sparseCode->m * relevantDataIndicesCounterHost[atomIdx];
-
         delete svdContainer;
     }
-
-
 }
+
 //******************
 //  kSVD algorithm
 //  GPU Version
@@ -317,7 +381,7 @@ void CudaKSvdDenoiser::kSvd(){
     
     for(int i = 0 ; i < iter ; i++){
 
-        std::cout<<"Ksvd-Iter: "<<i+1<<std::endl;
+       // std::cout<<"Ksvd-Iter: "<<i+1<<std::endl;
 
         //OMP phase
         auto start = std::chrono::steady_clock::now();
@@ -326,37 +390,37 @@ void CudaKSvdDenoiser::kSvd(){
 
         auto end = std::chrono::steady_clock::now();
         auto tot1 = end - start;
-        std::cout<<"    # OMP Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl;
+       // std::cout<<"    # OMP Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl;
 
         //Dict update phase
         start = std::chrono::steady_clock::now();
         updateDictionary();
         end = std::chrono::steady_clock::now();
         auto tot2 = end - start;
-        std::cout<<"    # Dict update Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot2).count()<<" s"<<std::endl;
+     //   std::cout<<"    # Dict update Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot2).count()<<" s"<<std::endl;
         sparseCode->deviceVector = NULL;
         delete sparseCode;
         
-        std::cout<<"    # Total Time: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1 + tot2).count()<<" s"<<std::endl<<std::endl;
+       // std::cout<<"    # Total Time: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1 + tot2).count()<<" s"<<std::endl<<std::endl;
     }
 
     auto start = std::chrono::steady_clock::now();
 
-    std::cout<<"Final OMP"<<std::endl;
-//    CuBlasMatrixOmp* omp = (CuBlasMatrixOmp*) MatrixOps::factory(CUBLAS_OMP);
+    //std::cout<<"Final OMP"<<std::endl;
     sparseCode = omp->work(noisePatches, dictionary);
+    delete omp;
 
     auto end = std::chrono::steady_clock::now();
     auto tot1 = end - start;
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;        
+    //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;        
 }
 
-void CudaKSvdDenoiser::createImage(){
+void CudaKSvdDenoiser::createImage(bool transpose){
 
     //Build deNoised Patches/Images
     delete noisePatches;
 
-    std::cout<<"Build image denoised"<<std::endl;
+    //std::cout<<"Build image denoised"<<std::endl;
     auto start = std::chrono::steady_clock::now();
 
     CuBlasMatrixMult* mult= (CuBlasMatrixMult*) MatrixOps::factory(CUBLAS_MULT);
@@ -426,19 +490,42 @@ void CudaKSvdDenoiser::createImage(){
 
     CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
     image->_data = img->data();
-    image->transpose();
+    
+    if(transpose)
+        image->transpose();
 
     outputMatrix = new Matrix(inputMatrix->m, inputMatrix->n, inputMatrix->m, image->_data);
-
-    delete sparseCode;
-    delete dictionary;
-    delete noisePatches;
-    sparseCode = NULL;
-    dictionary = NULL;
-    noisePatches = NULL;
 
     auto end = std::chrono::steady_clock::now();
     auto tot1 = end - start;
 
-    std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;
+    //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;
+}
+
+void CudaKSvdDenoiser::createImageFromSubImages(Matrix* patches, Matrix* input){
+
+    host_vector<float>* img = new host_vector<float>(input->m * input->n,0);
+
+    int patchesXcolumn = input->n / subImageWidthDim;
+
+    for(int patchIdx = 0 ; patchIdx < patches->n; patchIdx += patchesXcolumn){
+
+        int stride = patchIdx * patches->m;
+
+        for(int i = 0; i < patchesXcolumn; i++){
+
+            int stride2 = patchesXcolumn * subImageWidthDim;
+            for(int j = 0; j < subImageHeightDim; j++){
+
+                int startPatches = patches->m * (i + patchIdx) + (j * subImageWidthDim);
+                copy(patches->hostVector->begin() + startPatches, patches->hostVector->begin() + startPatches + subImageWidthDim, img->begin() + stride + (stride2 * j) + (i * subImageWidthDim));
+            }
+        }
+    }
+
+   
+    CImg<float>* image = new CImg<float>(input->m, input->n);   
+    image->_data = img->data();
+    image->transpose();
+    outputMatrix = new Matrix(input->m, input->n, input->m, image->_data);
 }

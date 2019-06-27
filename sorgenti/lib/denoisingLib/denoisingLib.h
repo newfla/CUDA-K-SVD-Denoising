@@ -34,6 +34,8 @@ class denoising::Denoiser{
         int patchHeightDim = 8;
         int slidingWidth = 2;
         int slidingHeight = 2;
+        int subImageWidthDim = 0;
+        int subImageHeightDim = 0;
         int ompIter = 5;
         int atoms = 256;
         int iter = 10;
@@ -80,10 +82,11 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         
         CudaKSvdDenoiser();
         svd::SvdContainer* buildSvdContainer();
-        void createPatches();
+        void createPatches(bool);
         void initDictionary();
         void updateDictionary();
-        void createImage();
+        void createImage(bool);
+        void createImageFromSubImages(baseUtl::Matrix*, baseUtl::Matrix*);
         void kSvd();
 
     friend Denoiser;
