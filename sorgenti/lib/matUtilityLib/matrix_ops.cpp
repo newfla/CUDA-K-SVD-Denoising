@@ -10,6 +10,7 @@ MatrixOps::MatrixOps(){}
 //  Free Matrix* acquired (HOST/DEVICE) 
 //*************************************
 MatrixOps::~MatrixOps(){
+    
     if(c!= NULL)
         delete c;
 }
@@ -18,7 +19,6 @@ MatrixOps::~MatrixOps(){
 //  Set coeff alfa e beta
 //  input: alfa, beta (float)
 //*************************************
-
 void MatrixOps::setCoeff(float alfa, float beta){
     
     this->alfa = alfa;
@@ -59,5 +59,6 @@ MatrixOps* MatrixOps::factory(MatrixOpsType type){
 //  output:  + timers (TimeElapsed*) ms timers
 //********************************************
 TimeElapsed* MatrixOps::getTimeElapsed(){
+
     return timeElapsed;
 }

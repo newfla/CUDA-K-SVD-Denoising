@@ -10,6 +10,7 @@ SvdEngine::SvdEngine(){}
 //  Free Matrix* acquired (HOST/DEVICE) 
 //*************************************
 SvdEngine::~SvdEngine(){
+
     delete input;
     for(Matrix* matrix : output)
         delete matrix;
@@ -20,6 +21,7 @@ SvdEngine::~SvdEngine(){
 //  input:  + matrix (Matrix*) float, collum-major
 //************************************************
 void SvdEngine::init(Matrix* matrix){
+    
     input = matrix;
 }
 
@@ -37,9 +39,6 @@ SvdEngine* SvdEngine::factory(SvdEngineType type){
 
         case CUSOLVER_GESVDJ:
             return new CuSolverGeSvdJ();
-
-        case CUSOLVER_GESVDJ_BATCH:
-            return new CuSolverGeSvdJBatch();
         
         case CUSOLVER_GESVDA_BATCH:
             return new CuSolverGeSvdABatch();

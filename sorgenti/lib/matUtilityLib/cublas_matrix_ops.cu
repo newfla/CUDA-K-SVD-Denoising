@@ -20,6 +20,7 @@ void CuBlasMatrixOps::setOps(cublasOperation_t op1, cublasOperation_t op2){
 // Create cuBlas additional data and move data on DEVICE
 //*******************************************************
 void CuBlasMatrixOps::init(){
+    
     if(handle == NULL){   
         handle = new cublasHandle_t();
         cublasCreate(handle);
@@ -37,6 +38,7 @@ void CuBlasMatrixOps::init(){
 // Clear cuBlas additional data
 //*****************************
 void CuBlasMatrixOps::finalize(){
+    
     if(handle != NULL){
         cublasDestroy(*handle);
         handle = NULL;

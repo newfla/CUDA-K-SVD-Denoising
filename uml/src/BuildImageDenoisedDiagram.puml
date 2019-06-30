@@ -1,11 +1,11 @@
 @startuml BuildImageDenoisedDiagram
-|HOST|
-|#AntiqueWhite|DEVICE|
+
 start
-floating note: Pink == parallel exec
+
 partition DxS {
-    #HotPink:noisePatches = SGEMM(dictionary, sparseCode);
-    |HOST|
+    partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+        :noisePatches = SGEMM(dictionary, sparseCode);
+    }
     :noisePatches.copyOnHost();
 }
 
@@ -26,16 +26,21 @@ partition RebuildAfirstImage {
 }
 
 partition FindLamba {
-    #HotPink:tempImg = weightedImage(img,pixelsWeight);
-    #HotPink:distance = Pixels distance Point by Point (originalImg, tempImg);
+    partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+        :tempImg = weightedImage(img,pixelsWeight);
+        :distance = Pixels distance Point by Point (originalImg, tempImg);
+    }
+   
     :lambda = abs(sqrt(l2Norm(temp) / (noiseVariance * imgDims)) -1);
 }
 
 partition BuildImage {
-    #HotPink: tempImg = transform(originalImg, d, "coffMult");
-    #HotPink: img = transform(tempImg, img, "Sum Point by Point");
-    #HotPink: tempImg = transform(weightList, d, "coffAdd");
-    #HotPink: img = transform(img, tempImg, "Divide Point by Point");
+    partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+        :tempImg = transform(originalImg, lambda, "coffMult");
+        :img = transform(tempImg, img, "Sum Point by Point");
+        :tempImg = transform(weightList, lambda, "coffAdd");
+        :img = transform(img, tempImg, "Divide Point by Point");
+    }
 }
 
 partition SaveImage {

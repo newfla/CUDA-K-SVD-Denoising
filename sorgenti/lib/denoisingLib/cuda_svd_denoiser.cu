@@ -32,7 +32,7 @@ __global__ void copyTransformSparseCodeKernel(device_ptr<float> sparseCode, devi
          sparseCode + ((start + 1) * atoms),
          selectSparseCode  + (tid * atoms));
 
-    selectSparseCode[ (tid * atoms) + atom] = 0.; 
+    selectSparseCode[(tid * atoms) + atom] = 0.; 
 }
 
 __global__ void findRelevantIndicesKernel(device_ptr<float> sparseCode, device_ptr<int> relevantDataIndices, device_ptr<int> relevantDataIndicesCounter,int patches, int atoms){
@@ -108,7 +108,9 @@ signed char CudaKSvdDenoiser::denoising(){
 //  output:  + staus (bool)
 //*************************
 bool CudaKSvdDenoiser::loadImage(){
+
     bool a = Denoiser::loadImage();
+
     if(speckle){
         transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog<float>());
         CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
@@ -123,6 +125,7 @@ bool CudaKSvdDenoiser::loadImage(){
 //  output:  + staus (bool)
 //*************************
 bool CudaKSvdDenoiser::saveImage(){
+
     return Denoiser::saveImage();
 }
 
@@ -133,7 +136,6 @@ bool CudaKSvdDenoiser::saveImage(){
 bool CudaKSvdDenoiser::internalDenoising(){
 
     auto start = std::chrono::steady_clock::now();
-   // size_t free_byte, total_byte;
 
     if(subImageWidthDim != 0 && subImageHeightDim != 0){
         int strideHeight = subImageHeightDim;
@@ -415,6 +417,9 @@ void CudaKSvdDenoiser::kSvd(){
     //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;        
 }
 
+//************************************
+//  Buils Image from denoised patches
+//***********************************
 void CudaKSvdDenoiser::createImage(bool transpose){
 
     //Build deNoised Patches/Images
@@ -502,6 +507,9 @@ void CudaKSvdDenoiser::createImage(bool transpose){
     //std::cout<<"    # Time Elapsed: "<<std::chrono::duration_cast<std::chrono::seconds>(tot1).count()<<" s"<<std::endl<<std::endl;
 }
 
+//**************************************************************
+//  Buils Image from each subImage (patches with 0 overlapping)
+//*************************************************************
 void CudaKSvdDenoiser::createImageFromSubImages(Matrix* patches, Matrix* input){
 
     host_vector<float>* img = new host_vector<float>(input->m * input->n,0);

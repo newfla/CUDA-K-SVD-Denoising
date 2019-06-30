@@ -59,6 +59,7 @@ bool Denoiser::loadImage(){
 //  output:  + staus (bool)
 //*************************
 bool Denoiser::saveImage(){
+
     auto start = std::chrono::steady_clock::now();
   
     CImg<float> image(outputMatrix->n, outputMatrix->ld);   
@@ -94,6 +95,7 @@ bool Denoiser::saveImage(){
 //  output: + Denoiser (Denoiser*)
 //***********************************************************************
 Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::string outputFile){
+    
     Denoiser* denoiser = NULL;
     switch (type)
     {
@@ -121,6 +123,7 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
 //  output:  + timer (TimeElapsed*) ms timers foreach phase
 //*********************************************************
 baseUtl::TimeElapsed* Denoiser::getTimeElapsed(){
+    
     return timeElapsed;
 }
 
@@ -129,5 +132,6 @@ baseUtl::TimeElapsed* Denoiser::getTimeElapsed(){
 //  output:  + psnr (host_vector<double>*) PSNR before/after denoising image
 //**************************************************************************
 host_vector<double>* Denoiser::getPsnr(){
+
     return psnr;
 }

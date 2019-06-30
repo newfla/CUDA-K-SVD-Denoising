@@ -19,7 +19,7 @@ namespace svd{
     class CuSolverGeSvdABatch;
 
     //Enum section
-    enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ, CUSOLVER_GESVDJ_BATCH, CUSOLVER_GESVDA_BATCH};
+    enum SvdEngineType{CUSOLVER_GESVD, CUSOLVER_GESVDJ, CUSOLVER_GESVDA_BATCH};
 };
 
 class svd::SvdContainer{
@@ -67,6 +67,8 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
         int lWork = 0, less = 0;
         int *deviceInfo;
         static cusolverDnHandle_t* cusolverH;
+        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
+        bool econ = false;
 
         SvdCudaEngine();
         virtual void init(baseUtl::Matrix*);
@@ -98,34 +100,11 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
         thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
 
-    private:
-        float tolerance;
-        int maxSweeps;
-        int econ = 0;
-        gesvdjInfo_t gesvdjParams;
-        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
-
-        void printStat();
-
-    friend SvdEngine;
-
-};
-
-class svd::CuSolverGeSvdJBatch: public svd::SvdCudaEngine{
-
     protected:
-        CuSolverGeSvdJBatch();
-        void init(baseUtl::Matrix*);
-        void work();
-        thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
-        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
-
-    private:
         float tolerance;
         int maxSweeps;
-        int econ = 0;
+        bool econ = false;
         gesvdjInfo_t gesvdjParams;
-        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
         void printStat();
 
@@ -135,9 +114,6 @@ class svd::CuSolverGeSvdJBatch: public svd::SvdCudaEngine{
 
 class svd::CuSolverGeSvdABatch: public svd::SvdCudaEngine{
 
-    public:
-        thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices(int m, int n, int tot, thrust::device_ptr<float> ptr);
-
     protected:
         CuSolverGeSvdABatch();
         void init(baseUtl::Matrix*);
@@ -146,9 +122,6 @@ class svd::CuSolverGeSvdABatch: public svd::SvdCudaEngine{
         void work();
         thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
         thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
-
-    private:
-        cusolverEigMode_t jobZ = CUSOLVER_EIG_MODE_VECTOR;
 
     friend SvdEngine;
 

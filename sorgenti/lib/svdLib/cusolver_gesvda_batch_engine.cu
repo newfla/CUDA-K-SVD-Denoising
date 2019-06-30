@@ -174,57 +174,6 @@ thrust::host_vector<baseUtl::Matrix*> CuSolverGeSvdABatch::getDeviceOutputMatric
     output.push_back(outputU);
     output.push_back(outputS);
     output.push_back(outputVT);
-
     
     return output; 
-}
-
-thrust::host_vector<baseUtl::Matrix*> CuSolverGeSvdABatch::getDeviceOutputMatrices(int m, int n, int tot, thrust::device_ptr<float> ptr){
-
-    init(m, n, tot, ptr);
-    double RnrmF[tot];
-    
-    //DGESVDA
-    cusolverDnSgesvdaStridedBatched(*cusolverH,
-                                    jobZ,
-                                    less,
-                                    m,
-                                    n,
-                                    raw_pointer_cast(ptr),
-                                    m,
-                                    m * n,
-                                    raw_pointer_cast(deviceS->data()),
-                                    less,
-                                    raw_pointer_cast(deviceU->data()),
-                                    m,
-                                    m * m,
-                                    raw_pointer_cast(deviceVT->data()),
-                                    n,
-                                    n * n,
-                                    deviceWork,
-                                    lWork,
-                                    deviceInfo,
-                                    RnrmF,
-                                    tot);
-    cudaDeviceSynchronize();
-
-
-    cudaFree(deviceInfo);
-    cudaFree(deviceWork);
-
-    Matrix *outputU, *outputVT, *outputS;
-
-    //Allocate memory on host
-    outputU = new Matrix(m, m, m * m, deviceU);
-    outputVT = new Matrix(n, n, n * n, deviceVT);
-    outputS = new Matrix (1, less, less, deviceS);
-    
-    //Save SVD
-    output.push_back(outputU);
-    output.push_back(outputS);
-    output.push_back(outputVT);
-
-    
-    return output; 
-
 }

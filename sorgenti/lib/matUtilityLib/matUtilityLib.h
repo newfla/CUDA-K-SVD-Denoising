@@ -21,6 +21,7 @@ namespace matUtl{
     class CuBlasMatrixMult;
     class CuBlasMatrixAdd;
     class CuBlasMatrixOmp;
+    
     //Enum section
     enum MatrixOpsType{CUBLAS_MULT, CUBLAS_ADD, CUBLAS_OMP};
 };
@@ -69,8 +70,7 @@ class matUtl::CuBlasMatrixMult : public matUtl::CuBlasMatrixOps{
 
     public:
         baseUtl::Matrix* work(baseUtl::Matrix* a, baseUtl::Matrix* b);
-        baseUtl::Matrix* work(baseUtl::Matrix* a, int n, thrust::device_ptr<float> pointer);
-  
+
     protected:
         CuBlasMatrixMult();
         void init();

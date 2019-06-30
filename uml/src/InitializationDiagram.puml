@@ -1,7 +1,5 @@
 @startuml InitializationDiagram
-|HOST|
 start
-floating note: Pink == parallel exec
 
 partition Load_From_File {
     :img = new CImg(pathFile);
@@ -19,16 +17,17 @@ partition Img_To_Patches {
         :collectedPatches++;
     endwhile
     :noisePatches = new Matrix (patchesHost, patchSize, nPatches);
-    |#AntiqueWhite|DEVICE|
     :noisePatches.copyOnDevice();
 }
 
 partition Init_Dict {
     :dictDevice = copy nAtoms from noisePatches;
-    #HotPink:while (currAtom < nAtoms)
-            #HotPink:normalizeAtom(currAtom, l2_norm);
-            #HotPink:currAtom++;
+    partition Kernel_Device_Parallel_Exec  #LightBlue{
+        while (currAtom < nAtoms)
+            :normalizeAtom(currAtom, l2_norm);
+            :currAtom++;
     endwhile
+    }
     :dictionary = new Matrix(dictDevice, patchSize, nAtoms);
 }
 stop

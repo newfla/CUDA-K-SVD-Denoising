@@ -38,10 +38,11 @@ package denoisingLib{
     class CudaKSvdDenoiser{
 
         - buildSvdContainer()
-        - createPatch()
+        - createPatches(bool)
         - initDictionary()
         - updateDictionary()
-        - createImage()
+        - createImage(bool)
+        - createImageFromSubImages()
         - kSvd()
         
         - int blocks

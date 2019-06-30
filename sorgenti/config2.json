@@ -6,8 +6,8 @@
     "globalParams" : {
         "patchWidthDim" : 12,
         "patchHeightDim" : 12,
-        "slidingWidth" : 4,
-        "slidingHeight" : 4,
+        "slidingWidth" : 3,
+        "slidingHeight" : 3,
         "atoms" : 256,
         "ompIter": 5,
         "ksvdIter" : 1,
@@ -18,9 +18,9 @@
     },
     
     "files": [
-        {"name": "istanbul1024.jpg",
+        {"name": "istanbul2048.jpg",
             "subImageWidthDim":512,
-            "subImageHeightDim":140
+            "subImageHeightDim":280
         }
     ]
   }

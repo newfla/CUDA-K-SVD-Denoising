@@ -57,7 +57,6 @@ class denoising::Denoiser{
         std::string inputFile, outputFile;
         cimg_library::CImg<float> *inputImage = NULL;
 
-
     friend BatchDenoiser;
 
 };
@@ -101,7 +100,6 @@ class denoising::BatchDenoiser{
         thrust::host_vector<thrust::host_vector<double>*> getPsnr(); 
         thrust::host_vector<signed char> seqBatchDenoising();
         static BatchDenoiser* factory(DenoiserType, std::string);
-
 
     protected:
         thrust::host_vector<baseUtl::TimeElapsed*> times;

@@ -20,8 +20,10 @@ package svdLib {
         # device_vector<float>* deviceWork
         # int lWork
         # int less
+        # cusolverEigMode_t jobZ
         # int* deviceInfo
         {static} # cusolverDnHandle_t* cusolverH
+        
         
 
         # init(Matrix*)
@@ -33,7 +35,6 @@ package svdLib {
     enum SvdEngineType{
         CUSOLVER_GESVD
         CUSOLVER_GESVDJ
-        CUSOLVER_GESVDJ_BATCH
         CUSOLVER_GESVDA_BATCH
     }
 
@@ -53,22 +54,6 @@ package svdLib {
         - int maxSweeps
         - int econ
         - gesvdjInfo_t gesvdjParams
-        - cusolverEigMode_t jobZ
-
-        - printStat()
-        # init(Matrix*)
-        # work( )
-        # host_vector<Matrix*> getOutputMatrices()
-        # device_vector<Matrix*> getDeviceOutputMatrices()
-    }
-
-    class CuSolverGeSvdjBatch{
-
-        - float tolerance
-        - int maxSweeps
-        - int econ
-        - gesvdjInfo_t gesvdjParams
-        - cusolverEigMode_t jobZ
 
         - printStat()
         # init(Matrix*)
@@ -78,7 +63,6 @@ package svdLib {
     }
 
     class CuSolverGeSvdaBatch{
-        - cusolverEigMode_t jobZ
 
         # init(Matrix*)
         # work( )
@@ -102,7 +86,6 @@ package svdLib {
     SvdEngine -> "1" SvdEngineType
     SvdEngine <|-- SvdCudaEngine : extends
     SvdCudaEngine <|-- CuSolverGeSvdj : extends
-    SvdCudaEngine <|-- CuSolverGeSvdjBatch : extends
     SvdCudaEngine <|-- CuSolverGeSvdaBatch : extends
     SvdCudaEngine <|-- CuSolverGeSvd : extends
 

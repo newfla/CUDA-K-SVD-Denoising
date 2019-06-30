@@ -1,90 +1,104 @@
 @startuml DenoiseDiagram
-|HOST|
+
 start
-floating note: Pink == parallel exec
 while (ksvdIter < maxKsvdIter)
 
     partition OMP {
         :norms = host_vector(patchesMatrix->n, 1);
         :residualVec = noisePatches;
         while(ompIter < maxOmpIter)
-            |#AntiqueWhite|DEVICE|
-            #HotPink:proj = SGEMM(dictionary, residualVec);
-            #HotPink:absProj = transform (proj, ABSoperator);
-            |HOST|
+            partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+                :proj = SGEMM(dictionary, residualVec);
+            }
+            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+                :absProj = transform (proj, ABSoperator);
+            }
             :inputIdx = 0;
             while(inputIdx < nPatches)
                 if(norms[inputIdx] > epsilon) then(yes)
                     :IndicesIter.add(inputIdx);
-                    |DEVICE|
-                    #HotPink:maxs[inputIdx] = ASYNC_INDEX_MAX(projABS[inputIdx][ ]);
+                    partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+                        :maxs[inputIdx] = ASYNC_INDEX_MAX(projABS[inputIdx][ ]);
+                    }
                 endif
-                |HOST|
                 :inputIdx++;
             endwhile;
-            |DEVICE|
-            while( inputIdx : indicesIter)
-                #HotPink:chosenAtomList[inputIdx][ ] = dict[maxs[inputIdx]][ ];
-                #HotPink:copiedList[inputIdx][ ] = dict[maxs[inputIdx]][ ];
-            endwhile;
-            #HotPink:USV = GESVDA_STRIDED_BATCH(copiedList);
-            #HotPink:copListInverse = V x TraspostaReciproca(S) x U "2x cublasSgemmStridedBatched";
-            |HOST|
+            partition Kernel_Device_Parallel_Exec #LightBlue{
                 while( inputIdx : indicesIter)
-                |DEVICE|
-                #HotPink:weightList[inputIdx][ ] = ASYNC_SGEMV(copListInverse[inputIdx], noisePatches[ ][ ]);
-                #HotPink:tempVec[inputIdx][ ] = ASYNC_SGEMV(chosenAtomList[inputIdx],weightList[inputIdx][ ]);
-                #HotPink:copy weightList into sparseCode (Attention to index);
+                    :chosenAtomList[inputIdx][ ] = dict[maxs[inputIdx]][ ];
                 endwhile;
-            #HotPink:residualVec = transform(noisePatches, tempVec, "Minus Point by Point");
-            |HOST|
-            while( inputIdx : indicesIter)
-                |DEVICE|
-                #HotPink:norms[inputIdx] = ASYNC_l2_NORM(residualVec[inputIdx]);
-            endwhile;
-          |HOST|
+            }
+            partition CuSolverLib_Device_Parallel_Exec #LightYellow{
+                :USV = GESVDA_STRIDED_BATCH(chosenAtomList);
+            }
+            partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+                :copListInverse = V x S^T^-1 x U "2x cublasSgemmStridedBatched";
+            }
+            
+            partition Kernel_Device_Parallel_Exec #LightBlue{
+                while( inputIdx : indicesIter)
+                    :weightList[inputIdx][ ] = ASYNC_SGEMV(copListInverse[inputIdx], noisePatches[ ][ ]);
+                    :tempVec[inputIdx][ ] = ASYNC_SGEMV(chosenAtomList[inputIdx],weightList[inputIdx][ ]);
+                    :copy weightList into sparseCode (Attention to index);
+                endwhile;
+            }
+            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+                :residualVec = transform(noisePatches, tempVec, "Minus Point by Point");
+            }
+
+            partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+                while( inputIdx : indicesIter)
+                    :norms[inputIdx] = ASYNC_l2_NORM(residualVec[inputIdx]);
+                endwhile;
+            }
         :ompIter++;
         endwhile;
     }
 
     partition UpdateDictionary {
-        |DEVICE|
-        #HotPink:while(currAtom < nAtoms)
-            #HotPink:relevantDataIndices[currAtom] = Patches Indices where sparseCode[currAtom][Idx] !=0;
-            #HotPink:relevantDataIndicesCounter[currAtom] = COUNT(relevantDataIndices[curAtom]);
-        endwhile
-        |HOST|
+        partition Kernel_Device_Parallel_Exec #LightBlue{
+            while(currAtom < nAtoms)
+                :relevantDataIndices[currAtom] = Patches Indices where sparseCode[currAtom][Idx] !=0;
+                :relevantDataIndicesCounter[currAtom] = COUNT(relevantDataIndices[curAtom]);
+            endwhile;
+        }
         :relevantDataIndices.copyOnHost();
         :relevantDataIndicesCounter.copyOnHost();
-        #HotPink:maxRelevant = MAX(relevantDataIndicesCounter[ ]);
-        |DEVICE|
+        :maxRelevant = MAX(relevantDataIndicesCounter[ ]);
         :selectSparseCode = new device_vector(maxRelevant * sparseCode->m);
-        |HOST|
-        while(currAtom < nAtoms)
-            |DEVICE|
-            #HotPink: selectSparseCode = coeffs associted with relevantDataIndices[currAtom];
-            :patch = 0;
-            #HotPink:while(patch < relevantDataIndicesCounter)
-                #HotPink:selectSparseCode[patch][currAtom] = 0;
-                #HotPink:patchesSelected.add(patchIdx);
-                :patch++;
-            endwhile;
-            #HotPink:dx = sgemm(dictionary, selectSparseCode);
-            #HotPink:E =  transform(patches[{relevantDataIndices}], dx, "Minus Point by Point");        
-            #HotPink:USV = SVD_JACOBI(E);
-            #HotPink: dict[currAtom] = U[0];
-            :vCol = 0;
-            #HotPink:while(patchIdx : patchesSelected)
-                #HotPink:sparseCode[patchIdx][ ]= S[1] * V[vCol][ ] ;
-                :vCol++;
-            endwhile;
-        |HOST|
-            :curAtom++;
+        partition Kernel_Device_Parallel_Exec #LightBlue{
+            while(currAtom < nAtoms)
+                :selectSparseCode = coeffs associted with relevantDataIndices[currAtom];
+                :patch = 0;
+                while(patch < relevantDataIndicesCounter)
+                    :selectSparseCode[patch][currAtom] = 0;
+                    :patchesSelected.add(patchIdx);
+                    :patch++;
+                endwhile;    
         endwhile;
+        }
+            partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+                :dx = sgemm(dictionary, selectSparseCode);
+            }
+            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+                :E = transform(patches[{relevantDataIndices}], dx, "Minus Point by Point");
+            }
+            partition CuSolverLib_Device_Parallel_Exec #LightYellow{
+                :USV = SVD_JACOBI(E);
+            }
+            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+                :dict[currAtom] = U[0];
+                :vCol = 0;
+                while(patchIdx : patchesSelected)
+                    :sparseCode[patchIdx][ ]= S[1] * V[vCol][ ] ;
+                    :vCol++;
+                endwhile;
+            }
+            :curAtom++;
     }
     :ksvdIter++;
 endwhile;
-|HOST|
+
 partition FinalOMP {
     :sparseCode = as before;
 }

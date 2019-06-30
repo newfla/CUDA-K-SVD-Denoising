@@ -12,6 +12,7 @@ CuSolverGeSvdJ::CuSolverGeSvdJ(){}
 void CuSolverGeSvdJ::init(Matrix* matrix){
 
     //Call parent method
+    SvdCudaEngine::econ = this->econ;
     SvdCudaEngine::init(matrix);
 
     //Configuration gesvdj

@@ -45,6 +45,7 @@ host_vector<baseUtl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 //  output:  + psnr (host_vector<host_vector<double>*>) PSNR before/after denoising foreach image
 //***********************************************************************************************
 thrust::host_vector<thrust::host_vector<double>*> BatchDenoiser::getPsnr(){
+    
     return psnrs;
 }
 
@@ -144,6 +145,5 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     }
 
     streamJson.close();
-    
     return batchDenoiser;
 }

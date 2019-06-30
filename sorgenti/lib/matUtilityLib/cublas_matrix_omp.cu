@@ -16,9 +16,6 @@ __global__ void copyData1Kernel(device_ptr<int> indicesIterDevice, device_ptr<in
     int inputIdxStride = inputIdx + stride;
     chosenAtomIdxList[(inputIdxStride * iters) + iter] = (dictN * inputIdxStride) + chosenAtomIdx;
     chosenAtomIdxList2[(inputIdxStride * iters) + iter] = chosenAtomIdx;
-    
-  //  for(int i=0; i<dictM; i++)
-   //     chosenAtomList[(inputIdxStride * iters * dictM) + (iter * dictM) + i] = dict[(chosenAtomIdx * dictM) + i];
 }
 
 __global__ void copyData2Kernel(device_ptr<int> indicesIterDevice,  device_ptr<int> chosenAtomIdxList2, device_ptr<float> dict, device_ptr<float> copiedList, int dictM, int iter, int iters, int tot, int stride){
@@ -34,8 +31,6 @@ __global__ void copyData2Kernel(device_ptr<int> indicesIterDevice,  device_ptr<i
             copiedList[(dictM * tid * iter) + (i * dictM) + j] = dict[(dictM * chosenAtomIdx) + j];
         }
     }
-
-       // copiedList[(dictM * tid * iter) + i] =  chosenAtomList[((inputIdx + stride) * iters * dictM) + i];
 }
 
 __global__ void copyData3Kernel(device_ptr<float> weightList, device_ptr<float> cVector, device_ptr<int> indicesIterDevice, device_ptr<int> chosenAtomIdxList, int size, int iters, int tot, int stride){
@@ -246,14 +241,30 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             }
  
             device_vector<int> indicesIterDevice = indicesIter;
-            copyData1Kernel<<<blocks, 1024>>> (indicesIterDevice.data(), maxs->data(),  chosenAtomIdxList->data(), chosenAtomIdxList2->data(), dictionaryMatrix->n, iter, maxIters, indicesIter.size(), countPatches);
+            copyData1Kernel<<<blocks, 1024>>> (indicesIterDevice.data(),
+                                               maxs->data(),
+                                               chosenAtomIdxList->data(),
+                                               chosenAtomIdxList2->data(),
+                                               dictionaryMatrix->n,
+                                               iter,
+                                               maxIters,
+                                               indicesIter.size(),
+                                               countPatches);
             cudaDeviceSynchronize();
   
             device_vector<float>* copiedList = new device_vector<float>(max * dictionaryMatrix->m);
             device_vector<float> sVector(indicesIter.size() * dictionaryMatrix->m * size,0);            
             float *sVectorPtr = raw_pointer_cast(sVector.data());
 
-            copyData2Kernel<<<blocks, 1024>>>(indicesIterDevice.data(), chosenAtomIdxList2->data(), dictionaryMatrix->deviceVector->data(), copiedList->data(), dictionaryMatrix->m, size, maxIters, indicesIter.size(), countPatches);
+            copyData2Kernel<<<blocks, 1024>>>(indicesIterDevice.data(),
+                                              chosenAtomIdxList2->data(),
+                                              dictionaryMatrix->deviceVector->data(),
+                                              copiedList->data(),
+                                              dictionaryMatrix->m,
+                                              size,
+                                              maxIters,
+                                              indicesIter.size(),
+                                              countPatches);
             cudaDeviceSynchronize();
  
             //ChosenAtomList Pseudo-Inverse
@@ -329,7 +340,14 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
             }
  
             cudaDeviceSynchronize();
-            copyData3Kernel<<<blocks,1024>>>(weightList->data(), cVector->data(), indicesIterDevice.data(),  chosenAtomIdxList->data(), size, maxIters, indicesIter.size(), countPatches);
+            copyData3Kernel<<<blocks,1024>>>(weightList->data(),
+                                             cVector->data(),
+                                             indicesIterDevice.data(),
+                                             chosenAtomIdxList->data(),
+                                             size,
+                                             maxIters,
+                                             indicesIter.size(),
+                                             countPatches);
             cudaDeviceSynchronize();
 
             int inputIdxCounter = 0;
@@ -362,7 +380,7 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                   residualVec.begin(),
                   minus<float>());
 
-            for(int inputIdx : indicesIterGlobal){ //n == #columns == # patches
+            for(int inputIdx : indicesIterGlobal){
 
                 cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
             
@@ -396,45 +414,45 @@ CuBlasMatrixOmp::~CuBlasMatrixOmp(){
     if(patchesIter != NULL)
         delete patchesIter->data();
 
-    if(proj != NULL){
-        proj->clear();
-        proj->shrink_to_fit();
-        delete proj;
+    if(proj == NULL) return;
 
-        projAbs->clear();
-        projAbs->shrink_to_fit();
-        delete projAbs;
+    proj->clear();
+    proj->shrink_to_fit();
+    delete proj;
 
-        tempVec->clear();
-        tempVec->shrink_to_fit();
-        delete tempVec;
+    projAbs->clear();
+    projAbs->shrink_to_fit();
+    delete projAbs;
 
-        maxs->clear();
-        maxs->shrink_to_fit();
-        delete maxs;
-        
-        alfaBeta->clear();
-        alfaBeta->shrink_to_fit();
-        delete alfaBeta;
-        
-        chosenAtomIdxList->clear();
-        chosenAtomIdxList->shrink_to_fit();
-        delete chosenAtomIdxList;
-        
-        chosenAtomIdxList2->clear();
-        chosenAtomIdxList2->shrink_to_fit();
-        delete chosenAtomIdxList2;
+    tempVec->clear();
+    tempVec->shrink_to_fit();
+    delete tempVec;
 
-        tempMatMult->clear();
-        tempMatMult->shrink_to_fit();
-        delete tempMatMult;
+    maxs->clear();
+    maxs->shrink_to_fit();
+    delete maxs;
+    
+    alfaBeta->clear();
+    alfaBeta->shrink_to_fit();
+    delete alfaBeta;
+    
+    chosenAtomIdxList->clear();
+    chosenAtomIdxList->shrink_to_fit();
+    delete chosenAtomIdxList;
+    
+    chosenAtomIdxList2->clear();
+    chosenAtomIdxList2->shrink_to_fit();
+    delete chosenAtomIdxList2;
 
-        pseudoInverse->clear();
-        pseudoInverse->shrink_to_fit();
-        delete pseudoInverse;
+    tempMatMult->clear();
+    tempMatMult->shrink_to_fit();
+    delete tempMatMult;
 
-        weightList->clear();
-        weightList->shrink_to_fit();
-        delete weightList;
-  }
+    pseudoInverse->clear();
+    pseudoInverse->shrink_to_fit();
+    delete pseudoInverse;
+
+    weightList->clear();
+    weightList->shrink_to_fit();
+    delete weightList;
 }

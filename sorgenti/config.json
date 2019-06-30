@@ -18,17 +18,6 @@
     },
 
     "files": [
-
-        {"name" : "patch_c_Istanbul.jpg",
-            "patchWidthDim" : 128,
-            "patchHeightDim" : 35,
-            "slidingWidth" : 48,
-            "slidingHeight" : 14,
-            "atoms" : 5000,
-            "speckle": true,
-            "minOmpIterBatch":10
-           },
-
            {"name" : "barbara.png",
             "ref" : "barbaraRef.png"
            }

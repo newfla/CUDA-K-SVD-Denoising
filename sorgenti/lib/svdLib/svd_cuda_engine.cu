@@ -35,7 +35,7 @@ void SvdCudaEngine::init(Matrix* matrix){
 
     deviceU = new device_vector<float>(matrix->ld * matrix->m);
     deviceS = new device_vector<float>(less);
-    deviceVT = new device_vector<float>(matrix->n * matrix->n);
+    deviceVT = (!econ) ? new device_vector<float>(matrix->n * matrix->n) : new device_vector<float>(matrix->n * less);
 
     //Copy matrix on device
     if(matrix->deviceVector == NULL)
@@ -60,8 +60,8 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getOutputMatrices(){
 
     //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, hostU);
-    outputVT = new Matrix(input->n, input->n, input->n, hostVT);
     outputS = new Matrix (1, less, 1, hostS);
+    outputVT = (!econ) ? new Matrix(input->n, input->n, input->n, hostVT): outputVT = new Matrix(input->n, less, input->n, hostVT);
 
     //Save SVD
     output.push_back(outputU);
@@ -103,7 +103,7 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
 
     //Allocate memory on host
     outputU = new Matrix(input->ld, input->m, input->m, deviceU);
-    outputVT = new Matrix(input->n, input->n, input->n, deviceVT);
+    outputVT = (!econ) ? new Matrix(input->n, input->n, input->n, deviceVT): outputVT = new Matrix(input->n, less, input->n, deviceVT);
     outputS = new Matrix (1, less, 1, deviceS);
     
     //Save SVD
@@ -121,6 +121,7 @@ thrust::host_vector<Matrix*> SvdCudaEngine::getDeviceOutputMatrices(){
 // Clear cuSolver additional data
 //*****************************
 void SvdCudaEngine::finalize(){
+    
     if(cusolverH != NULL){
         cusolverDnDestroy(*cusolverH);
         cusolverH = NULL;
