@@ -26,7 +26,7 @@ partition RebuildAfirstImage {
 }
 
 partition FindLamba {
-    partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+    partition ThrustLib_Host_Parallel_Exec #LightSteelBlue{
         :tempImg = weightedImage(img,pixelsWeight);
         :distance = Pixels distance Point by Point (originalImg, tempImg);
     }
@@ -35,7 +35,7 @@ partition FindLamba {
 }
 
 partition BuildImage {
-    partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+    partition ThrustLib_Host_Parallel_Exec #LightSteelBlue{
         :tempImg = transform(originalImg, lambda, "coffMult");
         :img = transform(tempImg, img, "Sum Point by Point");
         :tempImg = transform(weightList, lambda, "coffAdd");
