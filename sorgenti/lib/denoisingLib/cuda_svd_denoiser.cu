@@ -273,7 +273,7 @@ void CudaKSvdDenoiser::initDictionary(){
 
     auto start = std::chrono::steady_clock::now();
     int dim = patchWidthDim * patchHeightDim;
-    int offset = 0;//dim * (noisePatches->n / 2);
+    int offset = dim * (noisePatches->n / 2);
     device_vector<float>* dict = new device_vector<float>(noisePatches->hostVector->begin() + offset, noisePatches->hostVector->begin() + offset + (dim * atoms));
 
     dictionary = new Matrix(dim, atoms, dim, dict);

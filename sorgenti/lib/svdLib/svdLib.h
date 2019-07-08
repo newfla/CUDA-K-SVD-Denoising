@@ -103,7 +103,7 @@ class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{
     protected:
         float tolerance;
         int maxSweeps;
-        bool econ = false;
+        bool econ = true; //Nel caso mettere a FALSE
         gesvdjInfo_t gesvdjParams;
 
         void printStat();
