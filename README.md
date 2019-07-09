@@ -57,6 +57,13 @@ cd sorgenti/build
 In config.json if outputFolder is the same as inputFolder original images will be overwritten
 </aside>
 
+## Results
+| Noise Image | Recovered Image |
+| ------------- | ------------- |
+| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/barbara.png) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/barabara.png) |
+| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul2048.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul2048.png) |
+| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul.png) |
+
 ## Activity Diagram
 
 ![Overview Diagram](https://github.com/newfla/Denosing-SVD/raw/master/uml/out/uml/src/OverviewDiagram.png)
