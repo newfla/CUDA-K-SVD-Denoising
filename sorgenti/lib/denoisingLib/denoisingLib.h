@@ -115,7 +115,9 @@ struct myLog
 {
   __host__ __device__
     T operator()(const T& x) const{
-        return log2(x);
+        if(x == 0)
+            return 0.;
+        return log2f(x);
     }
 };
 
@@ -124,7 +126,7 @@ struct myExp
 {
   __host__ __device__
     T operator()(const T& x) const{
-        return pow(2.,x);
+        return powf(2.,x);
     }
 };
 

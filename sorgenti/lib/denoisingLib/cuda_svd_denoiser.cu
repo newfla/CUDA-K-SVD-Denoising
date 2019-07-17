@@ -465,7 +465,7 @@ void CudaKSvdDenoiser::createImage(bool transpose){
         }
     }
 
-    host_vector<float> temp(img->size());
+     host_vector<float> temp(img->size());
     transform(img->begin(),
               img->end(),
               imgWeight.begin(),

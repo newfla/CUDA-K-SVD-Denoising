@@ -61,8 +61,8 @@ In config.json if outputFolder is the same as inputFolder original images will b
 | Noise Image | Recovered Image |
 | ------------- | ------------- |
 | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/barbara.png) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/barabara.png) |
-| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul2048.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul2048.png) |
-| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul.png) |
+| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul2048.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul2048.jpg) |
+| ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/input/istanbul.jpg) | ![image](https://github.com/newfla/Denosing-SVD/blob/master/img/output/istanbul.jpg) |
 
 ## Activity Diagram
 
