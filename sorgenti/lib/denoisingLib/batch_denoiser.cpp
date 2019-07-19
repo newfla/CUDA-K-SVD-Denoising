@@ -42,11 +42,20 @@ host_vector<baseUtl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
 
 //************************************************************************************************
 //  Obtain PSNR stats
-//  output:  + psnr (host_vector<host_vector<double>*>) PSNR before/after denoising foreach image
+//  output:  + psnrs (host_vector<host_vector<double>*>) PSNR before/after denoising foreach image
 //***********************************************************************************************
 thrust::host_vector<thrust::host_vector<double>*> BatchDenoiser::getPsnr(){
     
     return psnrs;
+}
+
+//***************************************************************************
+//  Obtain ENL stats
+//  output:  + enls (host_vector<double>*) ENL(min/mean/max) before/after denoising image
+//**************************************************************************
+thrust::host_vector<thrust::host_vector<double>*>  BatchDenoiser::getEnl(){
+
+    return enls;
 }
 
 //***************************************************************************************************************************************************
@@ -141,6 +150,7 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         batchDenoiser->denoisers.push_back(denoiser);
         batchDenoiser->times.push_back(denoiser->getTimeElapsed());
         batchDenoiser->psnrs.push_back(denoiser->getPsnr());
+        batchDenoiser->enls.push_back(denoiser->getEnl());
          
     }
 

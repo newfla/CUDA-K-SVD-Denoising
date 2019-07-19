@@ -10,6 +10,7 @@ Denoiser::Denoiser(){
 
     timeElapsed = new TimeElapsed();
     psnr = new host_vector<double>(2);
+    enl = new host_vector<double>(6,0);
 }
 //**************
 //  Destructor
@@ -42,11 +43,16 @@ bool Denoiser::loadImage(){
     if(inputImage==NULL)
         return false;
 
+
     inputImage->transpose();
 
-    sigma = (float)inputImage->variance_noise();
 
     inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
+
+    if(speckle)
+        transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog<float>());
+
+    sigma = (float)inputImage->variance_noise();
 
     auto end = std::chrono::steady_clock::now();
     timeElapsed->init = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
@@ -134,4 +140,13 @@ baseUtl::TimeElapsed* Denoiser::getTimeElapsed(){
 host_vector<double>* Denoiser::getPsnr(){
 
     return psnr;
+}
+
+//***************************************************************************
+//  Obtain ENL stats
+//  output:  + enl (host_vector<double>*) ENL(min/mean/max) before/after denoising image
+//**************************************************************************
+host_vector<double>* Denoiser::getEnl(){
+
+    return enl;
 }

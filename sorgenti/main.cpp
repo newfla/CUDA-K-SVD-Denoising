@@ -53,13 +53,13 @@ void testCuSolverSVD(int m, int n, int tot){
     }
 }
 
-void testBatchDenoiser(){
-    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, "/home/fbizzarri/prova/config2.json");
+void testBatchDenoiser(std::string file){
+    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, file);
     batchDenoiser->seqBatchDenoising();
 
     host_vector<baseUtl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
-
     host_vector<host_vector<double>*> psnr = batchDenoiser->getPsnr(); 
+    host_vector<host_vector<double>*> enl = batchDenoiser->getEnl(); 
 
     double init = times[0]->init, work = times[0]->working, fin = times[0]->finalize, tot = times[0]->getTotalTime();
 
@@ -87,29 +87,40 @@ void testBatchDenoiser(){
         std::cout<<"    init time: "<<init<<" ms"<<std::endl;
         std::cout<<"    working time: "<<work<<" s"<<std::endl;
         std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;
+
         if(psnr[i-1]->data()[0]>=0){
             std::cout<<"    PSNR before:"<<psnr[i-1]->data()[0]<<std::endl;
             std::cout<<"    PSNR after:"<<psnr[i-1]->data()[1]<<std::endl;
-        }        
+        }
+
+        if(enl[i-1]->data()[0]>0){
+            std::cout<<"    ENL-min:  "<<enl[i-1]->data()[0];
+            std::cout<<" / "<<enl[i-1]->data()[3]<<std::endl;
+            std::cout<<"    ENL-mean: "<<enl[i-1]->data()[1];
+            std::cout<<" / "<<enl[i-1]->data()[4]<<std::endl;
+            std::cout<<"    EnL-max:  "<<enl[i-1]->data()[2];
+            std::cout<<" / "<<enl[i-1]->data()[5]<<std::endl;
+        }
+
     }
     
-
-
     delete batchDenoiser;
 }
 
 int main(int argc, char *argv[]) {
 
-    /*    
+    std::string file= "/home/fbizzarri/prova/config2.json";
 
+    if(argc == 2)
+        file = argv[1];
+
+    /*    
     testCuSolverSVD(1024,512,10);
     testCuSolverSVD(2048,1024,10);
     testCuSolverSVD(4096,2048,10);
     testCuSolverSVD(8192,4096,5);
-
     */
-
-  testBatchDenoiser();
+    testBatchDenoiser(file);
    
     return 0;
 }

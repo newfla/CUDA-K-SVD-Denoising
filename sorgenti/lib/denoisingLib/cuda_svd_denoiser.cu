@@ -111,12 +111,12 @@ bool CudaKSvdDenoiser::loadImage(){
 
     bool a = Denoiser::loadImage();
 
-    if(speckle){
+    /* if(speckle){
         transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog<float>());
         CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
         image->_data = inputMatrix->hostVector->data();
         sigma = (float)image->variance_noise();
-    }
+    }*/
     return a;
 }
 
@@ -127,6 +127,38 @@ bool CudaKSvdDenoiser::loadImage(){
 bool CudaKSvdDenoiser::saveImage(){
 
     return Denoiser::saveImage();
+}
+
+void CudaKSvdDenoiser::checkEnl(bool old,  host_vector<float>* image){
+    if(!speckle)
+        return;
+
+    CImg<float>* tempImage = new CImg<float>(subImageHeightDim, subImageWidthDim);
+    host_vector<float> temp = *image;
+
+    if(old)
+        transform(temp.begin(), temp.end(), temp.begin(), myExp<float>());
+
+    tempImage->_data = temp.data();
+    tempImage->pow(2.);
+    double variance, mean;
+    variance = tempImage->variance_mean(1, mean);
+    mean = pow(mean,2.);
+    mean = mean / variance;
+
+    int offset = 0;
+    if(!old)
+        offset = 3;
+
+
+    if(mean < enl->data()[offset] || enl->data()[offset] == 0)
+        enl->data()[offset] = mean;
+    
+    if(mean > enl->data()[offset + 2] || enl->data()[offset + 2] == 0)
+        enl->data()[offset + 2] = mean;
+    
+        enl->data()[offset + 1] += mean;
+        
 }
 
 //****************************
@@ -162,8 +194,11 @@ bool CudaKSvdDenoiser::internalDenoising(){
             //Preapare SubImage
             host_vector<float>* subImage = new host_vector<float>(imagePatches->hostVector->begin() + (imagePatches->m * i), imagePatches->hostVector->begin() + (imagePatches->m * (i+1)));
            
-            inputMatrix = new Matrix(subImageHeightDim, subImageWidthDim, subImageHeightDim, subImage->data()); 
-              
+            inputMatrix = new Matrix(subImageHeightDim, subImageWidthDim, subImageHeightDim, subImage->data());
+
+            //calculate OLD ENL
+            checkEnl(true, subImage);
+            
             tempImage->_data = subImage->data();
             sigma = tempImage->variance_noise();
             
@@ -179,7 +214,11 @@ bool CudaKSvdDenoiser::internalDenoising(){
             //Rebuild originalImage
             createImage(false);
 
+            //calculate NEW ENL
+            checkEnl(false, outputMatrix->hostVector);
+
             copy(outputMatrix->hostVector->begin(), outputMatrix->hostVector->end(), imagePatches->hostVector->begin() + (imagePatches->m * i));
+            
             delete outputMatrix;
             delete sparseCode;
             delete dictionary;
@@ -191,10 +230,18 @@ bool CudaKSvdDenoiser::internalDenoising(){
         }
         createImageFromSubImages(imagePatches, inputMatrixPointer);
 
+        if(speckle){
+            enl->data()[1] /= (float) imagePatches->n;
+            enl->data()[4] /= (float) imagePatches->n;
+        }
+
         delete inputMatrixPointer;
         delete imagePatches;
         delete tempImage;
     }else{
+
+        //calculate OLD ENL
+        checkEnl(true, inputMatrix->hostVector);
 
         //Divide image in patches column majhostor of fixed dims
         createPatches(true);
@@ -207,6 +254,9 @@ bool CudaKSvdDenoiser::internalDenoising(){
 
         //Rebuild originalImage
         createImage(true);
+
+        //calculate NEW ENL
+        checkEnl(false, outputMatrix->hostVector);
 
         delete sparseCode;
         delete dictionary;
@@ -274,7 +324,7 @@ void CudaKSvdDenoiser::initDictionary(){
     auto start = std::chrono::steady_clock::now();
     int dim = patchWidthDim * patchHeightDim;
     int offset = dim * (noisePatches->n / 2);
-    device_vector<float>* dict = new device_vector<float>(noisePatches->hostVector->begin() + offset, noisePatches->hostVector->begin() + offset + (dim * atoms));
+    device_vector<float>* dict = new device_vector<float>(noisePatches->deviceVector->begin() + offset, noisePatches->deviceVector->begin() + offset + (dim * atoms));
 
     dictionary = new Matrix(dim, atoms, dim, dict);
 
@@ -465,7 +515,7 @@ void CudaKSvdDenoiser::createImage(bool transpose){
         }
     }
 
-     host_vector<float> temp(img->size());
+    host_vector<float> temp(img->size());
     transform(img->begin(),
               img->end(),
               imgWeight.begin(),

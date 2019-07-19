@@ -51,7 +51,7 @@ make
 ## Run
 ```Shell
 cd sorgenti/build
-./denoising json.config
+./denoising config.json
 ```
 <aside class="warning">
 In config.json if outputFolder is the same as inputFolder original images will be overwritten
