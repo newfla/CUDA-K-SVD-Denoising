@@ -31,7 +31,6 @@ void CuBlasMatrixOps::init(){
 
     if(b->deviceVector == NULL)
         b->copyOnDevice();
-
 } 
 
 //******************************

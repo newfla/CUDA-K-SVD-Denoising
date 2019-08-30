@@ -56,7 +56,7 @@ while (ksvdIter < maxKsvdIter)
     }
 
     partition UpdateDictionary {
-        partition Kernel_Device_Parallel_Exec #LightBlue{
+        partition Kernel_Device_Parallel #LightBlue{
             while(currAtom < nAtoms)
                 :relevantDataIndices[currAtom] = Patches Indices where sparseCode[currAtom][Idx] !=0;
                 :relevantDataIndicesCounter[currAtom] = COUNT(relevantDataIndices[curAtom]);
@@ -66,27 +66,26 @@ while (ksvdIter < maxKsvdIter)
         :relevantDataIndicesCounter.copyOnHost();
         :maxRelevant = MAX(relevantDataIndicesCounter[ ]);
         :selectSparseCode = new device_vector(maxRelevant * sparseCode->m);
-        partition Kernel_Device_Parallel_Exec #LightBlue{
-            while(currAtom < nAtoms)
-                :selectSparseCode = coeffs associted with relevantDataIndices[currAtom];
-                :patch = 0;
-                while(patch < relevantDataIndicesCounter)
-                    :selectSparseCode[patch][currAtom] = 0;
-                    :patchesSelected.add(patchIdx);
-                    :patch++;
-                endwhile;    
-        endwhile;
-        }
-            partition CuBlasLib_Device_Parallel_Exec #LightGreen{
-                :dx = sgemm(dictionary, selectSparseCode);
+        while(currAtom < nAtoms)
+            partition Kernel_Device_Parallel #LightBlue{
+                    :selectSparseCode = coeffs associted with relevantDataIndices[currAtom];
+                    :patch = 0;
+                    while(patch < relevantDataIndicesCounter)
+                        :selectSparseCode[patch][currAtom] = 0;
+                        :patchesSelected.add(patchIdx);
+                        :patch++;
+                    endwhile;    
             }
-            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+            partition CuBlasLib_Device_Parallel #LightGreen{
+                :dx = SGEMM(dictionary, selectSparseCode);
+            }
+            partition ThrustLib_Device_Parallel #LightSteelBlue{
                 :E = transform(patches[{relevantDataIndices}], dx, "Minus Point by Point");
             }
-            partition CuSolverLib_Device_Parallel_Exec #LightYellow{
+            partition CuSolverLib_Device_Parallel #LightYellow{
                 :USV = SVD_JACOBI(E);
             }
-            partition ThrustLib_Device_Parallel_Exec #LightSteelBlue{
+            partition ThrustLib_Device_Parallel #LightSteelBlue{
                 :dict[currAtom] = U[0];
                 :vCol = 0;
                 while(patchIdx : patchesSelected)
@@ -95,6 +94,7 @@ while (ksvdIter < maxKsvdIter)
                 endwhile;
             }
             :curAtom++;
+    endwhile;
     }
     :ksvdIter++;
 endwhile;

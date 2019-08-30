@@ -65,6 +65,7 @@ baseUtl::Matrix* CuBlasMatrixAdd::work(Matrix* a, Matrix* b){
                 pointerC,
                 b->ld);
     cudaDeviceSynchronize();
+    
     auto end = std::chrono::steady_clock::now();
     timeElapsed->working = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 

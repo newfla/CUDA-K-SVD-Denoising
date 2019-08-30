@@ -12,8 +12,9 @@ __global__ void copyData1Kernel(device_ptr<int> indicesIterDevice, device_ptr<in
     if(tid>=tot)
         return;
     int inputIdx = indicesIterDevice[tid];
+     int inputIdxStride = inputIdx + stride;
     int chosenAtomIdx = maxs[inputIdx];
-    int inputIdxStride = inputIdx + stride;
+
     chosenAtomIdxList[(inputIdxStride * iters) + iter] = (dictN * inputIdxStride) + chosenAtomIdx;
     chosenAtomIdxList2[(inputIdxStride * iters) + iter] = chosenAtomIdx;
 }
@@ -43,7 +44,6 @@ __global__ void copyData3Kernel(device_ptr<float> weightList, device_ptr<float> 
         int idx = chosenAtomIdxList[((inputIdx + stride) * iters) + i]; 
         cVector[idx] = weightList[(size * inputIdx) + i];
     }
-    
 }
 
 __global__ void transformSMat(device_ptr<float> s, device_ptr<float> sVector, int n, int m, int tot){
@@ -162,7 +162,6 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
         tempMatMult = new device_vector<float>(patchesXIter * maxIters * dictionaryMatrix->m);
         pseudoInverse = new device_vector<float>(patchesXIter * maxIters * dictionaryMatrix->m);
         weightList = new device_vector<float>(patchesXIter * maxIters);
-
     }
 
     float *dictPtr = raw_pointer_cast(dictionaryMatrix->deviceVector->data());
@@ -338,8 +337,8 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                             weightListPtr + (size * inputIdx),
                             1);
             }
- 
             cudaDeviceSynchronize();
+
             copyData3Kernel<<<blocks,1024>>>(weightList->data(),
                                              cVector->data(),
                                              indicesIterDevice.data(),
@@ -380,19 +379,19 @@ baseUtl::Matrix* CuBlasMatrixOmp::work(Matrix* patchesMatrix, Matrix* dictionary
                   residualVec.begin(),
                   minus<float>());
 
-            for(int inputIdx : indicesIterGlobal){
+        for(int inputIdx : indicesIterGlobal){
 
-                cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
-            
-                cublasSnrm2(*handle,
-                            dictionaryMatrix->m,
-                            resPtr + (inputIdx * patchesMatrix->m),
-                            1,
-                            normsDevicePtr + inputIdx);
-            }
-            cudaDeviceSynchronize();
-            norms = normsDevice;
-            iter++;
+            cublasSetStream(*handle,streams->data()[inputIdx % maxStreams]);
+        
+            cublasSnrm2(*handle,
+                        dictionaryMatrix->m,
+                        resPtr + (inputIdx * patchesMatrix->m),
+                        1,
+                        normsDevicePtr + inputIdx);
+        }
+        cudaDeviceSynchronize();
+        norms = normsDevice;
+        iter++;
     }
 
     auto end = std::chrono::steady_clock::now();

@@ -3,7 +3,7 @@
 start
 
 partition DxS {
-    partition CuBlasLib_Device_Parallel_Exec #LightGreen{
+    partition CuBlasLib_Device_Parallel #LightGreen{
         :noisePatches = SGEMM(dictionary, sparseCode);
     }
     :noisePatches.copyOnHost();
@@ -26,16 +26,16 @@ partition RebuildAfirstImage {
 }
 
 partition FindLamba {
-    partition ThrustLib_Host_Parallel_Exec #LightSteelBlue{
-        :tempImg = weightedImage(img,pixelsWeight);
-        :distance = Pixels distance Point by Point (originalImg, tempImg);
+    partition ThrustLib_Host_Parallel #LightSteelBlue{
+        :firstImg = weightedImage(img,pixelsWeight);
+        :distance = Pixels distance Point by Point (originalImg, firstImg);
     }
    
-    :lambda = abs(sqrt(l2Norm(temp) / (noiseVariance * imgDims)) -1);
+    :lambda = abs(sqrt(l2Norm(distance) / (noiseVariance * imgDims)) -1);
 }
 
 partition BuildImage {
-    partition ThrustLib_Host_Parallel_Exec #LightSteelBlue{
+    partition ThrustLib_Host_Parallel #LightSteelBlue{
         :tempImg = transform(originalImg, lambda, "coffMult");
         :img = transform(tempImg, img, "Sum Point by Point");
         :tempImg = transform(weightList, lambda, "coffAdd");

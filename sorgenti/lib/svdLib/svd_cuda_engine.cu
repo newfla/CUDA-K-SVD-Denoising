@@ -43,7 +43,6 @@ void SvdCudaEngine::init(Matrix* matrix){
     deviceA = matrix->deviceVector;
 }
 
-
 //******************************************************************
 //  Obtain input matrix SVD decompisition and free DEVICE resources 
 //  output:  + matrices (Matrix*) float, collum-major

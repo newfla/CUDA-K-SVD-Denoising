@@ -108,7 +108,6 @@ void CuSolverGeSvdABatch::init(int m, int n, int tot, thrust::device_ptr<float> 
                                         tot);
                                         
     cudaMalloc((void**) &deviceWork , sizeof(float) * lWork);
-
 }
 
 

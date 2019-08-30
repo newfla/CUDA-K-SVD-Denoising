@@ -92,6 +92,7 @@ package svdLib {
     hide SvdEngineType methods
     hide SvdContainer fields
     hide SvdEngine fields
+    hide CuSolverGeSvdaBatch fields
 }
 
 package baseUilityLib{
@@ -108,6 +109,5 @@ package baseUilityLib{
 SvdContainer --> "*" TimeElapsed
 SvdContainer --> "*" Matrix
 SvdEngine --> "*" Matrix
-
 
 @enduml

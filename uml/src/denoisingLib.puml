@@ -65,7 +65,8 @@ package denoisingLib{
 
 
     CudaKSvdDenoiser -|> Denoiser : extends
-    DenoiserType "1"<- CudaKSvdDenoiser
+    DenoiserType "1"<- Denoiser
+    DenoiserType "1"<- BatchDenoiser
     BatchDenoiser --> "*" Denoiser
     hide CudaKSvdDenoiser fields
     hide BatchDenoiser fields

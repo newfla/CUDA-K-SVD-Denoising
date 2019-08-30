@@ -12,7 +12,6 @@ __global__ void computeErrorKernel(device_ptr<float> patches, device_ptr<float> 
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
-
     int start = relevantDataIndices[offsetIndices + tid] * dim;
 
     for (int i = 0; i < dim; i++)
@@ -24,7 +23,6 @@ __global__ void copyTransformSparseCodeKernel(device_ptr<float> sparseCode, devi
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=tot)
         return;
-
     int start = relevantDataIndices[offsetIndices + tid];
 
     copy(thrust::device, 
@@ -39,9 +37,9 @@ __global__ void findRelevantIndicesKernel(device_ptr<float> sparseCode, device_p
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if(tid>=atoms)
         return;
-
     int start = tid * patches;
     int counter = 0;
+
     for (int i = 0; i < patches; i++){
         if(sparseCode[(i * atoms) + tid] != 0){
             relevantDataIndices[start + counter] = i;
@@ -56,6 +54,7 @@ __global__ void normalizeDictKernel(device_ptr<float> dict, int n, int tot){
     if(tid>=tot)
         return;
     int start = tid * n, end = start + n;
+
     //Calculate norm
     float norm = sqrtf(transform_reduce(thrust::device, dict + start, dict + end, square<float>(), 0, plus<float>()));
     
@@ -81,7 +80,6 @@ SvdContainer* CudaKSvdDenoiser::buildSvdContainer(){
             default:
             case CUDA_K_GESVDJ:
                 return new SvdContainer(SvdEngine::factory(CUSOLVER_GESVDJ));
-         
         }
 }
 
@@ -109,15 +107,7 @@ signed char CudaKSvdDenoiser::denoising(){
 //*************************
 bool CudaKSvdDenoiser::loadImage(){
 
-    bool a = Denoiser::loadImage();
-
-    /* if(speckle){
-        transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog<float>());
-        CImg<float>* image = new CImg<float>(inputMatrix->m, inputMatrix->n);   
-        image->_data = inputMatrix->hostVector->data();
-        sigma = (float)image->variance_noise();
-    }*/
-    return a;
+    return Denoiser::loadImage();
 }
 
 //**************************
@@ -135,13 +125,14 @@ void CudaKSvdDenoiser::checkEnl(bool old,  host_vector<float>* image){
 
     CImg<float>* tempImage = new CImg<float>(subImageHeightDim, subImageWidthDim);
     host_vector<float> temp = *image;
+    double variance, mean;
 
     if(old)
         transform(temp.begin(), temp.end(), temp.begin(), myExp<float>());
 
     tempImage->_data = temp.data();
     tempImage->pow(2.);
-    double variance, mean;
+
     variance = tempImage->variance_mean(1, mean);
     mean = pow(mean,2.);
     mean = mean / variance;
@@ -149,7 +140,6 @@ void CudaKSvdDenoiser::checkEnl(bool old,  host_vector<float>* image){
     int offset = 0;
     if(!old)
         offset = 3;
-
 
     if(mean < enl->data()[offset] || enl->data()[offset] == 0)
         enl->data()[offset] = mean;
@@ -283,17 +273,17 @@ void CudaKSvdDenoiser::createPatches(bool transfer){
 
     auto start = std::chrono::steady_clock::now();
 
-    int i, j;
+    int i, j, k;
     host_vector<float>* patchesHost = new host_vector<float>();
 
     //Create patch division on host
     for(int i = 0; i + patchHeightDim <= inputMatrix->n; i+= slidingHeight){ 
 
-        for(j = 0; j + patchWidthDim <= inputMatrix->m; j+= slidingWidth){ 
+        for(int j = 0; j + patchWidthDim <= inputMatrix->m; j+= slidingWidth){ 
 
             int startPatch = (i * inputMatrix->m) + j;
 
-            for(int k = startPatch; k < startPatch + patchHeightDim * inputMatrix->m; k += inputMatrix->m)
+            for(k = startPatch; k < startPatch + patchHeightDim * inputMatrix->m; k += inputMatrix->m)
                patchesHost->insert(patchesHost->end(), inputMatrix->hostVector->begin() + k, inputMatrix->hostVector->begin() + k + patchWidthDim);
         }  
     }
@@ -359,7 +349,6 @@ void CudaKSvdDenoiser::updateDictionary(){
 
     relevantDataIndicesCounterHost = relevantDataIndicesCounter;
     
-    
     int totRelevant = reduce(relevantDataIndicesCounterHost.begin(), relevantDataIndicesCounterHost.end(), 0, maximum<int>());
     int offset = 0;
 
@@ -403,7 +392,7 @@ void CudaKSvdDenoiser::updateDictionary(){
         transform(usv[0]->deviceVector->begin(),
                   usv[0]->deviceVector->begin() + usv[0]->m,
                   dictionary->deviceVector->begin() + (atomIdx * dictionary->m),
-                  _1 * -1.f);
+                  _1 );
 
         //Calculate new coeffs
         device_vector<int> idxSeq(relevantDataIndicesCounterHost[atomIdx]); 
@@ -415,7 +404,7 @@ void CudaKSvdDenoiser::updateDictionary(){
         transform(v->deviceVector->begin(),
                   v->deviceVector->begin() + relevantDataIndicesCounterHost[atomIdx],
                   make_permutation_iterator(sparseCode->deviceVector->begin(), idxSeq.begin()),
-                  -1.f * usv[1]->deviceVector->data()[0] *_1);
+                  _1 * usv[1]->deviceVector->data()[0] );
 
         delete svdContainer;
     }
@@ -581,7 +570,6 @@ void CudaKSvdDenoiser::createImageFromSubImages(Matrix* patches, Matrix* input){
         }
     }
 
-   
     CImg<float>* image = new CImg<float>(input->m, input->n);   
     image->_data = img->data();
     image->transpose();

@@ -17,7 +17,6 @@ BatchDenoiser::~BatchDenoiser(){
     //TimeElapsed[1]...[n] are freed by associated denoiser 
     for(Denoiser* denoiser : denoisers)
         delete denoiser;
-
 }
 
 //************************************************************************

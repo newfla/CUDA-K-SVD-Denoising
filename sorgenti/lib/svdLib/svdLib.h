@@ -35,6 +35,7 @@ class svd::SvdContainer{
     private:
         baseUtl::TimeElapsed* timeElapsed = NULL;
         SvdEngine* svdEngine = NULL;
+        
 };
 
 class svd::SvdEngine{
@@ -54,6 +55,7 @@ class svd::SvdEngine{
         SvdEngine();
 
         friend SvdContainer;
+
 };
 
 class svd::SvdCudaEngine : public svd::SvdEngine{
@@ -74,6 +76,7 @@ class svd::SvdCudaEngine : public svd::SvdEngine{
         virtual void init(baseUtl::Matrix*);
         virtual thrust::host_vector<baseUtl::Matrix*> getOutputMatrices();
         virtual thrust::host_vector<baseUtl::Matrix*> getDeviceOutputMatrices();
+
 };
 
 class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
@@ -89,6 +92,7 @@ class svd::CuSolverGeSvd : public svd::SvdCudaEngine{
         float* deviceRWork = NULL;
 
     friend SvdEngine;
+
 };
 
 class svd::CuSolverGeSvdJ: public svd::SvdCudaEngine{

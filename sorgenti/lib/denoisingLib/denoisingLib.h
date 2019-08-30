@@ -93,6 +93,7 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
 
     friend Denoiser;
     friend BatchDenoiser;
+
 };
 
 class denoising::BatchDenoiser{
@@ -113,6 +114,7 @@ class denoising::BatchDenoiser{
 
     private:
         BatchDenoiser();
+        
 };
 
 template <typename T>

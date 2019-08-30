@@ -27,7 +27,4 @@ package utilityLib{
     }
 
     note right: Time in milliseconds
-
-    
-
 @enduml

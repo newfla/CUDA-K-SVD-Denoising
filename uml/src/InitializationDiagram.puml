@@ -22,7 +22,7 @@ partition Img_To_Patches {
 
 partition Init_Dict {
     :dictDevice = copy nAtoms from noisePatches;
-    partition Kernel_Device_Parallel_Exec  #LightBlue{
+    partition Kernel_Device_Parallel #LightBlue{
         while (currAtom < nAtoms)
             :normalizeAtom(currAtom, l2_norm);
             :currAtom++;

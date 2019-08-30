@@ -43,9 +43,7 @@ bool Denoiser::loadImage(){
     if(inputImage==NULL)
         return false;
 
-
     inputImage->transpose();
-
 
     inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
 

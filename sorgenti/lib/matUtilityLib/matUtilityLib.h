@@ -124,6 +124,7 @@ class matUtl::CuBlasMatrixOmp : public matUtl::CuBlasMatrixOps{
         thrust::device_vector<float>* pseudoInverse = NULL;
         thrust::device_vector<float>* weightList = NULL;
     friend MatrixOps;
+    
 };
 
 struct abs_val
