@@ -187,7 +187,7 @@ bool CudaKSvdDenoiser::internalDenoising(){
         delete tempImage;
 
     }else{
-/*
+
         //Divide image in patches column major order of fixed dims
         createPatches(true);
 
@@ -202,9 +202,7 @@ bool CudaKSvdDenoiser::internalDenoising(){
 
         delete sparseCode;
         delete dictionary;
-        delete noisePatches;*/
-        
-        outputMatrix = inputMatrix;
+        delete noisePatches;
     }
 
     
