@@ -14,62 +14,17 @@ BatchDenoiser::BatchDenoiser(){}
 //***************************************
 BatchDenoiser::~BatchDenoiser(){
 
-    //TimeElapsed[1]...[n] are freed by associated denoiser 
     for(Denoiser* denoiser : denoisers)
         delete denoiser;
 }
 
-//************************************************************************
-//  Obtain time stats
-//  output:  + timers (host_vector<TimeElapsed*>) ms timers foreach image
-//***********************************************************************
-host_vector<baseUtl::TimeElapsed*> BatchDenoiser::getTimeElapsed(){
+//**********************************************
+//  Obtain Denoiser List
+//  output:  + denoisers (host_vector<Denoiser*>) 
+//************************************************
+thrust::host_vector<denoising::Denoiser*>BatchDenoiser::getDenoiserList(){
 
-    times[0]->init = 0;
-    times[0]->init = 0;
-    times[0]->init = 0;
-
-    for(int i = 1; i < times.size(); i++)
-    {
-        times[0]->init += times[i]->init;
-        times[0]->working += times[i]->working;
-        times[0]->finalize += times[i]->finalize;
-    }
-    
-    return times;
-}
-
-//************************************************************************************************
-//  Obtain PSNR stats
-//  output:  + psnrs (host_vector<host_vector<double>*>) PSNR before/after denoising foreach image
-//***********************************************************************************************
-thrust::host_vector<thrust::host_vector<double>*> BatchDenoiser::getPsnr(){
-    
-    return psnrs;
-}
-
-//***************************************************************************
-//  Obtain ENL stats
-//  output:  + enls (host_vector<double>*) ENL(min/mean/max) before/after denoising image
-//**************************************************************************
-thrust::host_vector<thrust::host_vector<double>*>  BatchDenoiser::getEnl(){
-
-    return enls;
-}
-
-//***************************************************************************************************************************************************
-//  Denoise each image sequentially
-//  output:  + status (host_vector<signed char>) foreach image: 0 = done, -1 = image loading failed, -2 = denoising failed, -3 = image saving failed
-//**************************************************************************************************************************************************
-host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
-
-    host_vector<signed char> results;
-    
-    for(Denoiser* denoiser : denoisers)
-    
-        results.push_back(denoiser->denoising());
-
-    return results;
+    return denoisers;
 }
 
 //***********************************************************************************************
@@ -78,17 +33,21 @@ host_vector<signed char> BatchDenoiser::seqBatchDenoising(){
 //          + jsonFile (string) contains info on where load/save images and denoising parameters 
 //  output: + batchDenoiser (BatchDenoiser*)
 //**********************************************************************************************
-BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
+BatchDenoiser* BatchDenoiser::factory(std::string jsonFile){
     
     Object config, globalParams, file;
     Array files;
-
+    DenoiserTypeMap map;
     std::string fileName, inputFolder, outputFolder, refFile;
     std::vector<std::string> skip ={"..", "."};
     int globalPatchWidthDim, globalPatchHeightDim, globalSlidingWidth, globalSlidingHeight, globalAtoms, globalIter, globalOmpIter, globalMinOmpIterBatch, globalSubImageWidthDim, globalSubImageHeightDim;
-    bool globalSpeckle;
+    bool globalSpeckle, globalBW;
+    std::string globalType;
+
     int patchWidthDim, patchHeightDim, slidingWidth, slidingHeight, atoms, iter, ompIter, minOmpIterBatch, subImageWidthDim, subImageHeightDim;
-    bool speckle;
+    bool speckle, bw;
+    std::string type;
+
     std::fstream streamJson(jsonFile);
 
     config.parse(streamJson);
@@ -103,6 +62,8 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     globalSlidingWidth = (int) globalParams.get<Number> ("slidingWidth");
     globalSlidingHeight = (int) globalParams.get<Number> ("slidingHeight");
     globalSpeckle = globalParams.get<bool> ("speckle");
+    globalBW = globalParams.get<bool> ("B&W");
+    globalType = globalParams.get<std::string> ("type");
 
     globalAtoms = (int) globalParams.get<Number> ("atoms");
     globalIter = (int) globalParams.get<Number> ("ksvdIter");
@@ -112,7 +73,6 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
     globalSubImageHeightDim = (int) globalParams.get<Number> ("subImageHeightDim");
 
     BatchDenoiser* batchDenoiser = new BatchDenoiser();
-    batchDenoiser->times.push_back(new TimeElapsed());
 
     for(int i = 0; i < files.size(); i++){
 
@@ -127,11 +87,13 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         fileName = (std::string) file.get<std::string>("name");
         refFile = (std::string) file.get<std::string>("ref","");
         speckle = file.get<bool>("speckle",globalSpeckle);
+        bw = file.get<bool>("B&W",globalBW);
         minOmpIterBatch = (int) file.get<Number> ("minOmpIterBatch", globalMinOmpIterBatch);
         subImageWidthDim = (int) file.get<Number> ("subImageWidthDim", globalSubImageWidthDim);
         subImageHeightDim = (int) file.get<Number> ("subImageHeightDim", globalSubImageHeightDim);
+        type = file.get<std::string> ("type", globalType);
         
-        Denoiser* denoiser = Denoiser::factory(type, inputFolder + "/" + fileName, outputFolder + "/" + std::to_string(patchWidthDim) + "_" + std::to_string(patchHeightDim) + "_" + fileName);
+        Denoiser* denoiser = Denoiser::factory(map[type], inputFolder + "/" + fileName, outputFolder + "/" + std::to_string(patchWidthDim) + "_" + std::to_string(patchHeightDim) + "_" + fileName);
         
         denoiser->patchWidthDim = patchWidthDim;
         denoiser->patchHeightDim = patchHeightDim;
@@ -142,15 +104,12 @@ BatchDenoiser* BatchDenoiser::factory(DenoiserType type, std::string jsonFile){
         denoiser->atoms = atoms;
         denoiser->iter = iter;
         denoiser->speckle = speckle;
+        denoiser->bw = bw;
         denoiser->minOmpIterBatch = minOmpIterBatch;
         denoiser->subImageWidthDim = subImageWidthDim;
         denoiser->subImageHeightDim = subImageHeightDim;
         
-        batchDenoiser->denoisers.push_back(denoiser);
-        batchDenoiser->times.push_back(denoiser->getTimeElapsed());
-        batchDenoiser->psnrs.push_back(denoiser->getPsnr());
-        batchDenoiser->enls.push_back(denoiser->getEnl());
-         
+        batchDenoiser->denoisers.push_back(denoiser);         
     }
 
     streamJson.close();

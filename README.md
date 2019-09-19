@@ -31,13 +31,16 @@ make
 "outputFolder" : "absolute path where processed images will be saved",
     
 "globalParams" : { //for input files
-    "patchWidthDim" : 8, //patch side dimension
-    "patchHeightDim" : 35,  //other patch side dimension
-    "slidingWidth" : 128, //sliding between patches x-axis
-    "slidingHeight" : 35, //sliding between patches y-axis
+    "patchWidthDim" : 12, //patch side dimension
+    "patchHeightDim" : 12,  //other patch side dimension
+    "slidingWidth" : 3, //sliding between patches x-axis
+    "slidingHeight" : 3, //sliding between patches y-axis
     "atoms" : 256, //number of dicitonary elements 
     "ksvditer" : 10, //Ksvd iterations
-    "ompIter": 5 //OMP phase limit
+    "ompIter": 5, //OMP phase limit
+    "B&W" : true, //gray scale images
+    "speckle" : false, //don't use log/exp transform
+    "type": "CUDA_K_GESVDJ", //SVD decomposition alghorithm check denoisingLib.h for further details
 },
     
 "files": [
@@ -93,6 +96,10 @@ In config.json if outputFolder is the same as inputFolder original images will b
  required. Added support to rectangular patches
 
  - Version 0.4 : Faster than CPU version
+
+ - Version 0.5 : Fixed Speckle noise support
+
+ - Version 0.6 : Improved API
 
 ## Issues
  - I'm sure there are but for now I can't find them

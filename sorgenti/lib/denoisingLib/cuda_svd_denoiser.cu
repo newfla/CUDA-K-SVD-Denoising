@@ -119,38 +119,6 @@ bool CudaKSvdDenoiser::saveImage(){
     return Denoiser::saveImage();
 }
 
-void CudaKSvdDenoiser::checkEnl(bool old,  host_vector<float>* image){
-    if(!speckle)
-        return;
-
-    CImg<float>* tempImage = new CImg<float>(subImageHeightDim, subImageWidthDim);
-    host_vector<float> temp = *image;
-    double variance, mean;
-
-    if(old)
-        transform(temp.begin(), temp.end(), temp.begin(), myExp<float>());
-
-    tempImage->_data = temp.data();
-    tempImage->pow(2.);
-
-    variance = tempImage->variance_mean(1, mean);
-    mean = pow(mean,2.);
-    mean = mean / variance;
-
-    int offset = 0;
-    if(!old)
-        offset = 3;
-
-    if(mean < enl->data()[offset] || enl->data()[offset] == 0)
-        enl->data()[offset] = mean;
-    
-    if(mean > enl->data()[offset + 2] || enl->data()[offset + 2] == 0)
-        enl->data()[offset + 2] = mean;
-    
-        enl->data()[offset + 1] += mean;
-        
-}
-
 //****************************
 //  CUDA K-SVD implementation 
 //  output:  + staus (bool)host
@@ -186,9 +154,6 @@ bool CudaKSvdDenoiser::internalDenoising(){
            
             inputMatrix = new Matrix(subImageHeightDim, subImageWidthDim, subImageHeightDim, subImage->data());
 
-            //calculate OLD ENL
-            checkEnl(true, subImage);
-            
             tempImage->_data = subImage->data();
             sigma = tempImage->variance_noise();
             
@@ -204,9 +169,6 @@ bool CudaKSvdDenoiser::internalDenoising(){
             //Rebuild originalImage
             createImage(false);
 
-            //calculate NEW ENL
-            checkEnl(false, outputMatrix->hostVector);
-
             copy(outputMatrix->hostVector->begin(), outputMatrix->hostVector->end(), imagePatches->hostVector->begin() + (imagePatches->m * i));
             
             delete outputMatrix;
@@ -220,20 +182,13 @@ bool CudaKSvdDenoiser::internalDenoising(){
         }
         createImageFromSubImages(imagePatches, inputMatrixPointer);
 
-        if(speckle){
-            enl->data()[1] /= (float) imagePatches->n;
-            enl->data()[4] /= (float) imagePatches->n;
-        }
-
         delete inputMatrixPointer;
         delete imagePatches;
         delete tempImage;
+
     }else{
-
-        //calculate OLD ENL
-        checkEnl(true, inputMatrix->hostVector);
-
-        //Divide image in patches column majhostor of fixed dims
+/*
+        //Divide image in patches column major order of fixed dims
         createPatches(true);
 
         //Init Dict
@@ -245,16 +200,14 @@ bool CudaKSvdDenoiser::internalDenoising(){
         //Rebuild originalImage
         createImage(true);
 
-        //calculate NEW ENL
-        checkEnl(false, outputMatrix->hostVector);
-
         delete sparseCode;
         delete dictionary;
-        delete noisePatches;
+        delete noisePatches;*/
+        
+        outputMatrix = inputMatrix;
     }
 
     
-
     CuBlasMatrixOps::finalize();
     SvdCudaEngine::finalize();
    

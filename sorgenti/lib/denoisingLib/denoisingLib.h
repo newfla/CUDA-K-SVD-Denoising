@@ -2,6 +2,7 @@
 
 #include <jsonxx.h>
 #include <string>
+#include <map>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -18,17 +19,26 @@ namespace denoising{
 
     //Enum section
     enum DenoiserType{CUDA_K_GESVD, CUDA_K_GESVDJ, CUDA_K_GESVDA};
+
+    struct DenoiserTypeMap : public std::map<std::string, DenoiserType>{
+    DenoiserTypeMap()
+    {
+        this->operator[]("CUDA_K_GESVD") =  CUDA_K_GESVD;
+        this->operator[]("CUDA_K_GESVDJ") = CUDA_K_GESVDJ;
+        this->operator[]("CUDA_K_GESVDA") = CUDA_K_GESVDA;
+    };
+    ~DenoiserTypeMap(){}
+    };
 };
 
 class denoising::Denoiser{
 
     public:
         virtual ~Denoiser();
-        static Denoiser* factory(DenoiserType, std::string, std::string);
+        static Denoiser* factory(denoising::DenoiserType, std::string, std::string);
         virtual signed char denoising() = 0;
         baseUtl::TimeElapsed* getTimeElapsed();
         thrust::host_vector<double>* getPsnr();
-        thrust::host_vector<double>* getEnl();
 
     protected:
         int patchWidthDim = 8;
@@ -43,12 +53,12 @@ class denoising::Denoiser{
         int minOmpIterBatch = 0;
         float sigma;
         bool speckle = false;
+        bool bw = true;
         std::string refImage;
         baseUtl::Matrix* inputMatrix = NULL;
         baseUtl::Matrix* outputMatrix = NULL;
         baseUtl::TimeElapsed* timeElapsed = NULL;
         thrust::host_vector<double> * psnr = NULL;
-        thrust::host_vector<double> * enl = NULL;
         
         Denoiser();
         virtual bool loadImage();
@@ -89,7 +99,6 @@ class denoising::CudaKSvdDenoiser : public denoising::Denoiser{
         void createImage(bool);
         void createImageFromSubImages(baseUtl::Matrix*, baseUtl::Matrix*);
         void kSvd();
-        void checkEnl(bool,  thrust::host_vector<float>*);
 
     friend Denoiser;
     friend BatchDenoiser;
@@ -100,17 +109,12 @@ class denoising::BatchDenoiser{
 
     public:
         ~BatchDenoiser();
-        thrust::host_vector<baseUtl::TimeElapsed*> getTimeElapsed();
-        thrust::host_vector<thrust::host_vector<double>*> getPsnr();
-        thrust::host_vector<thrust::host_vector<double>*> getEnl();  
-        thrust::host_vector<signed char> seqBatchDenoising();
-        static BatchDenoiser* factory(DenoiserType, std::string);
+        thrust::host_vector<Denoiser*> getDenoiserList();
+        
+        static BatchDenoiser* factory(std::string);
 
     protected:
-        thrust::host_vector<baseUtl::TimeElapsed*> times;
-        thrust::host_vector<thrust::host_vector<double>*> psnrs;
-        thrust::host_vector<thrust::host_vector<double>*> enls;
-        thrust::host_vector<Denoiser*> denoisers;
+        thrust::host_vector<Denoiser*> denoisers;        
 
     private:
         BatchDenoiser();

@@ -11,7 +11,9 @@
         "atoms" : 256,
         "ompIter": 5,
         "ksvdIter" : 1,
+        "B&W" : true,
         "speckle" : false,
+        "type": "CUDA_K_GESVDJ",
         "minOmpIterBatch":0,
         "subImageWidthDim":0,
         "subImageHeightDim":0

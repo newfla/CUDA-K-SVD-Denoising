@@ -10,7 +10,7 @@ Denoiser::Denoiser(){
 
     timeElapsed = new TimeElapsed();
     psnr = new host_vector<double>(2);
-    enl = new host_vector<double>(6,0);
+
 }
 //**************
 //  Destructor
@@ -21,7 +21,7 @@ Denoiser::~Denoiser(){
     if(inputImage!=NULL)
        delete inputImage;
     
-    //outputImage is alreay freed in saveImage
+    //outputImage is freed in saveImage
 
     if(timeElapsed!=NULL)
         delete timeElapsed;
@@ -44,8 +44,11 @@ bool Denoiser::loadImage(){
         return false;
 
     inputImage->transpose();
-
-    inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());//inputImage->RGBtoYCbCr().channel(0).data());
+    
+    if(!bw)
+         inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->RGBtoYCbCr().channel(0).data());
+    else
+        inputMatrix = new Matrix(inputImage->height(), inputImage->width(), inputImage->height(), inputImage->data());
 
     if(speckle)
         transform(inputMatrix->hostVector->begin(),inputMatrix->hostVector->end(),inputMatrix->hostVector->begin(),myLog<float>());
@@ -113,11 +116,8 @@ Denoiser* Denoiser::factory(DenoiserType type, std::string inputFile, std::strin
         default:
             return NULL;
     }
-
-    if(denoiser != NULL){
         denoiser->inputFile = inputFile;
         denoiser->outputFile = outputFile;
-    }
 
     return denoiser;
 }
@@ -140,11 +140,3 @@ host_vector<double>* Denoiser::getPsnr(){
     return psnr;
 }
 
-//***************************************************************************
-//  Obtain ENL stats
-//  output:  + enl (host_vector<double>*) ENL(min/mean/max) before/after denoising image
-//**************************************************************************
-host_vector<double>* Denoiser::getEnl(){
-
-    return enl;
-}

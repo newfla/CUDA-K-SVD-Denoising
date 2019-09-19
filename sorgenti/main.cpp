@@ -54,72 +54,70 @@ void testCuSolverSVD(int m, int n, int tot){
 }
 
 void testBatchDenoiser(std::string file){
-    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(CUDA_K_GESVDJ, file);
-    batchDenoiser->seqBatchDenoising();
+    
+    double init = 0, work = 0, fin = 0;
+    BatchDenoiser* batchDenoiser = BatchDenoiser::factory(file);
+    host_vector<Denoiser*> list = batchDenoiser->getDenoiserList();
 
-    host_vector<baseUtl::TimeElapsed*> times = batchDenoiser->getTimeElapsed();
-    host_vector<host_vector<double>*> psnr = batchDenoiser->getPsnr(); 
-    host_vector<host_vector<double>*> enl = batchDenoiser->getEnl(); 
+    for (int i = 0; i < list.size(); i++){
 
-    double init = times[0]->init, work = times[0]->working, fin = times[0]->finalize, tot = times[0]->getTotalTime();
+        Denoiser* denoiser = list[i];
+        TimeElapsed* times;
+        host_vector<double> *psnr;
+
+        char status = denoiser->denoising();
+        switch (status){
+            case 0:
+            
+                times = denoiser->getTimeElapsed();
+                psnr = denoiser->getPsnr();
+                init += times->init;
+                work += times->working;
+                fin += times->finalize;
+
+                std::cout<<std::endl<<"## Image: "<<i+1<<" execution time: "<<times->getTotalTime()/1000.<<" s"<<std::endl;
+                std::cout<<"    init time: "<<times->init<<" ms"<<std::endl;
+                std::cout<<"    working time: "<<times->working/1000.<<" s"<<std::endl;
+                std::cout<<"    finalize time: "<<times->finalize<<" ms"<<std::endl;
+
+                if(psnr->data()[0]>=0){
+                std::cout<<"    PSNR before:"<<psnr->data()[0]<<std::endl;
+                std::cout<<"    PSNR after:"<<psnr->data()[1]<<std::endl;
+                }
+                break;
+            
+            case -1:
+                std::cout<<"Image Loading Failed"<<std::endl;
+                break;
+            
+            case -2:
+                std::cout<<"Denoising Failed"<<std::endl;
+                break;
+
+            case -3:
+                std::cout<<"Image Saving Failed"<<std::endl;
+                break;
+            }
+    }
 
     init/=1000.;
     work/=1000.;
     fin/=1000.;
-    tot/=1000.;
 
-    std::cout<<std::endl<<"# Total Batch execution time: "<<tot<<" s"<<std::endl;
-    std::cout<<"    Total Batch init time: "<<init<<" s"<<std::endl;
+    std::cout<<std::endl<<"# Total Batch execution time: "<<init + fin + work<<" s"<<std::endl;
+    std::cout<<"    Total Batch init time: "<<init <<" s"<<std::endl;
     std::cout<<"    Total Batch working time: "<<work<<" s"<<std::endl;
     std::cout<<"    Total Batch finalize time: "<<fin<<" s"<<std::endl;
-
-    for(int i = 1; i < times.size(); i++)
-    {
-        init = times[i]->init;
-        work = times[i]->working;
-        fin = times[i]->finalize;
-        tot = times[i]->getTotalTime();
-
-        work/=1000.;
-        tot/=1000.;
-
-        std::cout<<std::endl<<"## Image: "<<i<<" execution time: "<<tot<<" s"<<std::endl;
-        std::cout<<"    init time: "<<init<<" ms"<<std::endl;
-        std::cout<<"    working time: "<<work<<" s"<<std::endl;
-        std::cout<<"    finalize time: "<<fin<<" ms"<<std::endl;
-
-        if(psnr[i-1]->data()[0]>=0){
-            std::cout<<"    PSNR before:"<<psnr[i-1]->data()[0]<<std::endl;
-            std::cout<<"    PSNR after:"<<psnr[i-1]->data()[1]<<std::endl;
-        }
-
-        if(enl[i-1]->data()[0]>0){
-            std::cout<<"    ENL-min:  "<<enl[i-1]->data()[0];
-            std::cout<<" / "<<enl[i-1]->data()[3]<<std::endl;
-            std::cout<<"    ENL-mean: "<<enl[i-1]->data()[1];
-            std::cout<<" / "<<enl[i-1]->data()[4]<<std::endl;
-            std::cout<<"    EnL-max:  "<<enl[i-1]->data()[2];
-            std::cout<<" / "<<enl[i-1]->data()[5]<<std::endl;
-        }
-
-    }
-    
     delete batchDenoiser;
 }
 
 int main(int argc, char *argv[]) {
 
-    std::string file= "/home/fbizzarri/prova/config2.json";
+    std::string file = "../config.json";
 
     if(argc == 2)
         file = argv[1];
 
-    /*    
-    testCuSolverSVD(1024,512,10);
-    testCuSolverSVD(2048,1024,10);
-    testCuSolverSVD(4096,2048,10);
-    testCuSolverSVD(8192,4096,5);
-    */
     testBatchDenoiser(file);
    
     return 0;

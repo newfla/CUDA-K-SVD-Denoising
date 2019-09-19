@@ -6,8 +6,8 @@ package utilityLib{
         + int m
         + int n
         + int ld
-        + host_vector* hostVector
-        + device_vector* deviceVector
+        + host_vector<float>* hostVector
+        + device_vector<float>* deviceVector
         
         + Matrix(int, int, int, float*)
         + Matrix(int, int, int, host_vector<float>*)

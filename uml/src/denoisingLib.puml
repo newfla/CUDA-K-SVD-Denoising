@@ -21,6 +21,7 @@ package denoisingLib{
         # int ompIter
         # int sigma
         # bool speckle
+        # bool b&w
         # String refImage
         # host_vector<double>* psnr
 
@@ -55,19 +56,13 @@ package denoisingLib{
     }
 
     class BatchDenoiser{
-        + host_vector<TimeElapsed*> getTimeElapsed() 
-        + host_vector<host_vector<double>*> getPsnr()
-        + host_vector<signed char> seqBatchDenoising()
-        {static} + BatchDenoiser* factory (DenoiserType type, String)
+        + host_vector<Denoiser*> getDenoiserList() 
+        {static} + BatchDenoiser* factory (String json)
     }
-
-    note top: j-th batchDenoising = same as denoising()\nfirst TimeElapsed = sum single exec time 
-
 
     CudaKSvdDenoiser -|> Denoiser : extends
     DenoiserType "1"<- Denoiser
-    DenoiserType "1"<- BatchDenoiser
-    BatchDenoiser --> "*" Denoiser
+    BatchDenoiser o-- Denoiser
     hide CudaKSvdDenoiser fields
     hide BatchDenoiser fields
     hide DenoiserType methods
