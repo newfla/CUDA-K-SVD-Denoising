@@ -1,0 +1,27 @@
+{
+    "inputFolder" : "/home/fbizzarri/prova/img/input",
+    
+    "outputFolder" : "/home/fbizzarri/prova/img/output",
+    
+    "globalParams" : {
+        "patchWidthDim" : 8,
+        "patchHeightDim" : 8,
+        "slidingWidth" : 2,
+        "slidingHeight" : 2,
+        "atoms" : 256,
+        "ompIter": 5,
+        "ksvdIter" : 1,
+        "B&W" : true,
+        "speckle" : false,
+        "type": "CUDA_K_GESVDJ",
+        "minOmpIterBatch":0,
+        "subImageWidthDim":0,
+        "subImageHeightDim":0
+    },
+
+    "files": [
+           {"name" : "barbara.png",
+            "ref" : "barbaraRef.png"
+           }
+    ]
+  }

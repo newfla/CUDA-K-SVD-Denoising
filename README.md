@@ -17,7 +17,7 @@ __90% of K-SVD computation runs on GPU__
 
 ## Build
 ```Shell
-cd sorgenti  
+cd src  
 mkdir build
 cd build   
 cmake ..    
@@ -53,7 +53,7 @@ make
 
 ## Run
 ```Shell
-cd sorgenti/build
+cd src/build
 ./denoising config.json
 ```
 <aside class="warning">
