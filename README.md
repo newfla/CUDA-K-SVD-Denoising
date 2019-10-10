@@ -101,6 +101,8 @@ In config.json if outputFolder is the same as inputFolder original images will b
 
  - Version 0.6 : Improved API
 
+ - Version 1.0 : General BugFix & improvements. First public version
+
 ## Issues
  - I'm sure there are but for now I can't find them
 
